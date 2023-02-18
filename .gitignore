@@ -1,0 +1,9 @@
+/venv/
+
+*.wav
+
+__pycache__/
+creds/*.json
+
+*.mp3
+.env
