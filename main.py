@@ -1,7 +1,7 @@
 from google.cloud import speech
 import queue
 from typing import List
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Body, Depends
 from starlette.websockets import WebSocketState
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -10,22 +10,24 @@ from internal.services.speechRecognitionSerice import SpeechRecognitionService, 
 
 from internal.clients.web_socket_client import WebSocketClient
 
+from routes.openai_routes import openai_router
+
 from google_speech_wrapper import GoogleSpeechWrapper
+
+from dotenv import load_dotenv
 
 import asyncio
 
 import threading
-import janus
-
 
 import uvicorn
-import sys
 import os
-import re
 
 from async_generator import asynccontextmanager
 
 from google.cloud import texttospeech
+
+load_dotenv()
 
 app = FastAPI()
 
@@ -44,6 +46,8 @@ app.add_middleware(
     allow_methods=['*'],
     allow_headers=['*'],
 )
+
+app.include_router(openai_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',
@@ -187,13 +191,24 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         await GoogleSpeechWrapper.stop_recognition_stream(client_id)
 
 
-@app.post('/text_to_speech')
-async def get_text_to_speech(request: Request, web_response: Response):
+import pyaudio
+import wave
+import io
+
+from pydantic import BaseModel
+
+from typing import Optional
+class SpeechRequest(BaseModel):
+    text: str
+    voice: Optional[str]
+
+@app.get('/text_to_speech')
+async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
     try:
-        data = await request.json()
-        text = data['text']
-        print(text)
-        voice = data.get('voice', 'en-US-Wavenet-F')
+        print(data)
+        text = data.text
+        voice = data.voice
+        voice = 'en-US-Wavenet-A' if voice is None else voice
         language_code = 'en-US'
 
         # Instantiates a client
@@ -210,7 +225,7 @@ async def get_text_to_speech(request: Request, web_response: Response):
 
         # Select the type of audio file you want returned
         audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.MP3
+            audio_encoding=texttospeech.AudioEncoding.OGG_OPUS
         )
 
         # Perform the text-to-speech request on the text input with the selected
@@ -221,9 +236,11 @@ async def get_text_to_speech(request: Request, web_response: Response):
 
         def audio_generator():
             for chunk in response.audio_content:
+                print('\n\n\n\n' + str(chunk))
                 yield bytes(chunk)
 
-        return StreamingResponse(audio_generator(), media_type='audio/wav')
+        # return StreamingResponse(audio_generator(), media_type='audio/mp3')
+        return Response(content=response.audio_content, media_type='audio/webm;codecs=vp9,opus')
 
     except WebSocketDisconnect as websocket_disconect:
         print(websocket_disconect)

@@ -1,0 +1,126 @@
+{
+    "endpoints": {
+        "model_list": {
+            "url": "https://api.openai.com/v1/models",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true,
+                "Include_Organization": true,
+                "Content-Type": "application/json"
+            }
+        },
+        "completions": {
+            "url": "https://api.openai.com/v1/completions",
+            "method": "POST",
+            "body": {
+                "required": [
+                    "model"
+                ],
+                "optional": {
+                    "prompt": "string or array"
+                }
+            }
+        },
+        "create_fine_tune": {
+            "url": "https://api.openai.com/v1/fine-tunes",
+            "method": "POST",
+            "headers": {
+                "Authorization_Bearer": true,
+                "Content-Type": "application/json"
+            },
+            "body": {
+                "required": [
+                    "training_file"
+                ],
+                "optional": [
+                    "validation_file",
+                    "model",
+                    "n_epochs",
+                    "batch_size",
+                    "learning_rate_multiplier",
+                    "prompt_loss_weight",
+                    "compute_classification_metrics",
+                    "classification_n_classes",
+                    "classification_positive_class",
+                    "classification_betas",
+                    "suffix"
+                ]
+            }
+        },
+        "list_fine_tunes": {
+            "url": "https://api.openai.com/v1/fine-tunes",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true
+            }
+        },
+        "retrieve_fine_tune": {
+            "url": "https://api.openai.com/v1/fine-tunes",
+            "url_suffix": "fine_tune_id",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true
+            }
+        },
+        "delete_fine_tune": {
+            "url": "https://api.openai.com/v1/models/{model}",
+            "method": "DELETE",
+            "headers": {
+                "Authorization_Bearer": true
+            },
+            "path_params": [
+                "model"
+            ]
+        },
+        "upload_file": {
+            "url": "https://api.openai.com/v1/files",
+            "method": "POST",
+            "headers": {
+                "Authorization_Bearer": true
+            },
+            "body": {
+                "required": [
+                    "file",
+                    "purpose"
+                ]
+            }
+        },
+        "retrieve_file": {
+            "url": "https://api.openai.com/v1/files/{file_id}",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true
+            },
+            "path_params": [
+                "file_id"
+            ]
+        },
+        "retrieve_file_content": {
+            "url": "https://api.openai.com/v1/files/{file_id}/content",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true
+            },
+            "path_params": [
+                "file_id"
+            ]
+        },
+        "list_files": {
+            "url": "https://api.openai.com/v1/files",
+            "method": "GET",
+            "headers": {
+                "Authorization_Bearer": true
+            }
+        },
+        "delete_file": {
+            "url": "https://api.openai.com/v1/files/{file_id}",
+            "method": "DELETE",
+            "headers": {
+                "Authorization_Bearer": true
+            },
+            "path_params": [
+                "file_id"
+            ]
+        }
+    }
+}
