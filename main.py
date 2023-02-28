@@ -1,16 +1,17 @@
 from google.cloud import speech
 import queue
 from typing import List
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Body, Depends
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Depends
 from starlette.websockets import WebSocketState
 from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
-from internal.services.speechRecognitionSerice import SpeechRecognitionService, SpeechClient
+from internal.services.speechRecognitionSerice import SpeechRecognitionService
 
 from internal.clients.web_socket_client import WebSocketClient
 
 from routes.openai_routes import openai_router
+from routes.call_routes import call_router
 
 from google_speech_wrapper import GoogleSpeechWrapper
 
@@ -22,8 +23,6 @@ import threading
 
 import uvicorn
 import os
-
-from async_generator import asynccontextmanager
 
 from google.cloud import texttospeech
 
@@ -48,6 +47,7 @@ app.add_middleware(
 )
 
 app.include_router(openai_router)
+app.include_router(call_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',
@@ -66,56 +66,6 @@ class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: List[WebSocket] = []
         # self.speech_recognition_service = SpeechRecognitionService(self.speech_buffer)
-
-    @staticmethod
-    async def start_listening(ws: WebSocket, ):
-        client = clients[client_id]
-        speech_client = speech.SpeechClient()
-        config = speech.RecognitionConfig(
-            encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-            sample_rate_hertz=16000,
-            language_code="en-US",
-        )
-
-        streaming_config = speech.StreamingRecognitionConfig(
-            config=config,
-            interim_results=True
-        )
-
-        audio_generator = client.generator()
-        requests = (speech.StreamingRecognizeRequest(audio_content=content)
-                    for content in audio_generator)
-
-        responses = speech_client.streaming_recognize(
-            streaming_config, requests)
-
-        await listen_print_loop(responses, client)
-
-    @staticmethod
-    async def start_recognition_stream(client_id, websocket):
-        if client_id not in clients:
-            clients[client_id] = \
-                SimpleHandleStream(queue.Queue(), threading.Thread(target=asyncio.run, args=(
-                    ConnectionManager.start_listening(client_id),)), websocket)
-            clients[client_id].start_transcribing()
-        else:
-            print('Already running')
-
-    @staticmethod
-    async def stop_recognition_stream(client_id):
-        if client_id in clients:
-            await clients[client_id].close()
-            del clients[client_id]
-        else:
-            print('Not running')
-
-    @staticmethod
-    async def receive_data(client_id, data):
-        if client_id not in clients:
-            return
-
-        clients[client_id].write(data)
-
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -129,11 +79,6 @@ class ConnectionManager:
 
     async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
         await websocket.send_text(message)
-
-    async def handle_speech_recognition(self, message: str, websocket: WebSocket) -> None:
-        speech_recognition_service = SpeechRecognitionService()
-        speech_recognition_service.speech_buffer.write(message)
-        await self.send_speech_to_text(message, websocket, self.speech_recognition_service)
 
     async def send_speech_to_text(self, message: str, websocket: WebSocket, speechRecognitionService: SpeechRecognitionService) -> None:
         speechRecognitionService.speech_buffer.write(message)
