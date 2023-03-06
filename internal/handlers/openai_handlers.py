@@ -22,7 +22,8 @@ class OpenAIHandler:
                     model=chat_message.model,
                     prompt=chat_message.message,
                     temperature=0.6,
-                    max_tokens=3000,
+                    max_tokens=1000,
+                    stop=['||DONE||']
                 )
 
                 chat_message = OpenAIClient.decode_completion_to_chat_message(completion, chat_message.model)

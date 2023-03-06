@@ -94,7 +94,8 @@ def on_transcription_response(response, decode_queue: queue.Queue):
 
     if result.is_final:
         transcription = result.alternatives[0].transcript
-        decode_queue.put(transcription, block=False)
+        if transcription != '':
+            decode_queue.put(transcription, block=False)
     else:
         decode_queue.put('||TALKING||', block=False)
 
@@ -129,20 +130,26 @@ def send_audio(websocket, _buffer):
     asyncio.set_event_loop(loop)
     loop.run_until_complete(send_audio_loop(websocket, _buffer))
     
-def start_speech_client_bridge(websocket, _buffer):
-    speech_client_bridge = SpeechClientBridge(on_transcription_response, _buffer)
+def get_speech_client_thread(speech_client_bridge):
+    thread = threading.Thread(target=speech_client_bridge.start)
+    return thread
+
+async def listen_loop(websocket: WebSocket, decode_queue: queue.Queue, speech_client_bridge: SpeechClientBridge, transcript_buffer: queue.Queue, kill_queue: queue.Queue):
     thread = threading.Thread(target=speech_client_bridge.start)
     thread.start()
-    return speech_client_bridge
 
-async def listen_loop(websocket: WebSocket, speech_client_bridge: SpeechClientBridge, decode_queue: queue.Queue):
     import time
 
     last_decode = time.time()
     transcription = ''
-    while True:
+    while kill_queue.empty():
         try:
             message = await websocket.receive_json()
+            if speech_client_bridge._ended:
+                print('start transcription')
+                thread = threading.Thread(target=speech_client_bridge.start)
+                thread.start()
+
             if message.get('type', '') == 'websocket.connect':
                 continue
             elif message.get('event', '') == 'connected':
@@ -157,6 +164,8 @@ async def listen_loop(websocket: WebSocket, speech_client_bridge: SpeechClientBr
 
             elif message.get('event', '') == 'media':
                 media = message["media"]
+                if media['payload'] is None:
+                    raise ValueError('No payload in media message')
                 chunk = base64.b64decode(media["payload"])
                 speech_client_bridge.add_request(chunk)
 
@@ -171,61 +180,11 @@ async def listen_loop(websocket: WebSocket, speech_client_bridge: SpeechClientBr
                 print(transcription)
 
             if time.time() - last_decode > 3:
-                speech_client_bridge.terminate()
-                break
-
-        except Exception as e:
-            print(e)
-            break
-
-@call_router.websocket('/ws/{conversation_id}')
-async def websocket_endpoint(websocket: WebSocket, conversation_id):
-    await websocket.accept()
-
-    decode_queue = queue.Queue()
-
-    speech_client_bridge = start_speech_client_bridge(websocket, decode_queue)
-
-    import time
-
-    last_decode = time.time()
-    transcription = ''
-    while True:
-        try:
-            message = await websocket.receive_json()
-            if message.get('type', '') == 'websocket.connect':
-                continue
-            elif message.get('event', '') == 'connected':
-                continue
-            elif message.get('event', '') == 'start':
-                speech_client_bridge.stream_sid = message['streamSid']
-                continue
-            if message is None:
                 speech_client_bridge.add_request(None)
                 speech_client_bridge.terminate()
-                break
-
-            elif message.get('event', '') == 'media':
-                media = message["media"]
-                chunk = base64.b64decode(media["payload"])
-                speech_client_bridge.add_request(chunk)
-
-            # Check decode queue for transcription updates
-            if not decode_queue.empty():
-                last_decode = time.time()
-                last_transcription = decode_queue.get()
-                if last_transcription == '||TALKING||':
-                    continue
-
-                transcription += last_transcription
-                print(transcription)
-
-            if time.time() - last_decode > 3:
-                speech_client_bridge.terminate()
-                break
 
         except Exception as e:
-            print(e)
+            print('listen loop', e)
             break
 
     # Make sure decode queue is empty
@@ -236,42 +195,57 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id):
 
         transcription += last_transcription
 
-    text_to_speech_service = TextToSpeechService()
-    completion = openai_client.create_completion('text-davinci-002', transcription)
-    chat_message = OpenAIClient.decode_completion_to_chat_message(completion, 'text-davinci-002')
-    message = chat_message.message
-    print(message)
-    socket_message = {
-        'event': 'media',
-        'streamSid': speech_client_bridge.stream_sid,
-        'media': {
-            'payload': '',
+    speech_client_bridge.terminate()
+    transcript_buffer.put(transcription, block=False)
+    transcript_buffer.put('||STOP||', block=False)
+
+async def speak_loop(websocket: WebSocket, _buffer: queue.Queue, speech_client_bridge: SpeechClientBridge, transcript_buffer: queue.Queue):
+    while True:
+        text_to_speech_service = TextToSpeechService()
+        while transcript_buffer.empty():
+            await asyncio.sleep(0)
+        transcription = transcript_buffer.get()
+        if transcription is None or transcription == '':
+            continue
+        if transcription == '||STOP||':
+            break
+
+        print('speaking', '-------- TRANSCRIPTION --------', transcription, '-------- TRANSCRIPTION --------')
+        completion = openai_client.create_completion('text-davinci-002', transcription)
+        chat_message = OpenAIClient.decode_completion_to_chat_message(completion, 'text-davinci-002')
+        message = chat_message.message
+        print(message)
+        socket_message = {
+            'event': 'media',
+            'streamSid': speech_client_bridge.stream_sid,
+            'media': {
+                'payload': '',
+            }
         }
-    }
 
-    import json
-    audio = text_to_speech_service.talk(message)
-    # payload = base64.b64encode(audio).decode('utf-8')
-    # socket_message['media']['payload'] = payload
-    # await websocket.send_text(json.dumps(socket_message))
+        import json
+        print('getting audio')
+        audio = text_to_speech_service.talk(message)
 
-    # Skip header bytes
-    audio = audio[56:]
-    # payload = base64.b64encode(audio).decode('ascii')
-    # socket_message['media']['payload'] = payload
-    # print('sending', len(payload))
-    # await websocket.send_text(json.dumps(socket_message))
+        # Skip header bytes
+        audio = audio[56:]
 
+        print('parsing')
+        chunk_length = 512
+        for i in range(0, len(audio), chunk_length):
+            if i + chunk_length > len(audio):
+                payload = base64.b64encode(audio[i:]).decode('ascii')
+                socket_message = {
+                    'event': 'media',
+                    'streamSid': speech_client_bridge.stream_sid,
+                    'media': {
+                        'payload': payload,
+                    }
+                }
+                print('sent')
+                await websocket.send_text(json.dumps(socket_message))
 
-    # _buffer = queue.Queue()
-    # send_thread = threading.Thread(target=send_audio, args=(websocket, _buffer))
-    # send_thread.start()
-
-    print('parsing')
-    chunk_length = 512
-    for i in range(0, len(audio), 512):
-        if i + 512 > len(audio):
-            payload = base64.b64encode(audio[i:]).decode('ascii')
+            payload = base64.b64encode(audio[i:i+chunk_length]).decode('ascii')
             socket_message = {
                 'event': 'media',
                 'streamSid': speech_client_bridge.stream_sid,
@@ -281,21 +255,27 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id):
             }
             await websocket.send_text(json.dumps(socket_message))
 
-        payload = base64.b64encode(audio[i:i+512]).decode('ascii')
-        socket_message = {
-            'event': 'media',
-            'streamSid': speech_client_bridge.stream_sid,
-            'media': {
-                'payload': payload,
-            }
-        }
-        await websocket.send_text(json.dumps(socket_message))
+        print('done parsing')
+        _buffer.put(None)
 
-    print('done parsing')
-    # _buffer.put(None)
+@call_router.websocket('/ws/{conversation_id}')
+async def websocket_endpoint(websocket: WebSocket, conversation_id):
+    await websocket.accept()
 
-    # while not _buffer.empty():
-    #     await asyncio.sleep(0.1)
+    print('loop')
+    decode_queue = queue.Queue()
+    transcription_queue = queue.Queue()
+    kill_queue = queue.Queue()
+    speech_client_bridge = SpeechClientBridge(on_transcription_response, decode_queue)
+    while True:
+        try:
+            await listen_loop(websocket, decode_queue, speech_client_bridge, transcription_queue, kill_queue)
+            await speak_loop(websocket, decode_queue, speech_client_bridge, transcription_queue)
 
-    speech_client_bridge.terminate()
+        except Exception as e:
+            print(e, 'breaking', type(e))
+            break
+
+    transcription_queue.put('||STOP||', block=False)
+    kill_queue.put('||STOP||', block=False)
     await websocket.close()

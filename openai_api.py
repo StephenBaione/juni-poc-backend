@@ -242,5 +242,32 @@ class OpenAIClient:
         # wrap the string in square brackets to make it a valid json array string
         return string
 
+    def get_embeddings(self, text, model="text-embedding-ada-002"):
+        """Get embeddings from the specified model.
+
+        Args:
+            text (str): Text to get embeddings for.
+            model (str, optional): Model to use. Defaults to "ada".
+
+        Returns:
+            _type_: _description_
+        """
+        text = text.replace('\n', ' ')
+        return openai.Embedding.create(input = [text], model=model)['data'][0]['embedding']
+
+    def get_embeddings_batch(self, batch_text, model="text-embedding-ada-002"):
+        """Get embeddings from the specified model.
+
+        Args:
+            text (str): Text to get embeddings for.
+            model (str, optional): Model to use. Defaults to "ada".
+
+        Returns:
+            _type_: _description_
+        """
+        batch_text = [text.replace('\n', ' ') for text in batch_text]
+        embeddings = openai.Embedding.create(input = batch_text, model=model)['data']
+        return [embedding['embedding'] for embedding in embeddings]
+
     
 # ft-flAx5eIeboyMYTc50W2KnEfK

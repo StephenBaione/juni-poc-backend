@@ -13,6 +13,8 @@ from internal.clients.web_socket_client import WebSocketClient
 from routes.openai_routes import openai_router
 from routes.call_routes import call_router
 
+from internal.services.text_to_speech_service import TextToSpeechService
+
 from google_speech_wrapper import GoogleSpeechWrapper
 
 from dotenv import load_dotenv

@@ -7,3 +7,5 @@ creds/*.json
 
 *.mp3
 .env
+*.jsonl
+temp/

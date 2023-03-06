@@ -1,16 +1,15 @@
-import queue
-
 from google.cloud import speech
 
 import threading
 
-class SpeechClientBridge:
-    def __init__(self, on_response, decode_queue):
+from typing import Function
+
+import queue
+
+class SpeechToTextService:
+    def __init__(self, on_response: Function) -> None:
+        self._ended = True
         self._on_response = on_response
-        self._queue = queue.Queue()
-        self._ended = False
-        self.decode_queue = decode_queue
-        self.stream_sid = None
 
     def start(self):
         self._ended = False
@@ -36,35 +35,33 @@ class SpeechClientBridge:
 
         self.process_responses_loop(responses)
 
-    def terminate(self):
-        self._ended = True
-
-    def add_request(self, buffer):
-        if buffer is None:
-            self._queue.put(None, block=False)
-        self._queue.put(bytes(buffer), block=False)
-
     def process_responses_loop(self, responses):
         for response in responses:
-            self._on_response(response, self.decode_queue)
+            self._on_response(response)
 
             if self._ended:
                 break
 
-    def generator(self):
+    def terminate(self):
+        self._ended = True
+
+    def get_process_thread(self):
+        return threading.Thread(target=self.start)
+
+    def get_generator(self, decode_queue: queue.Queue):
         while not self._ended:
             # Use a blocking get() to ensure there's at least one chunk of
             # data, and stop iteration if the chunk is None, indicating the
             # end of the audio stream.
-            chunk = self._queue.get()
+            chunk = decode_queue.get()
             if chunk is None:
                 return
             data = [chunk]
 
             # Now consume whatever other data's still buffered.
-            while True:
+            while not decode_queue.empty():
                 try:
-                    chunk = self._queue.get(block=False)
+                    chunk = decode_queue.get(block=False)
                     if chunk is None:
                         return
                     data.append(chunk)
