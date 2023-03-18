@@ -27,7 +27,9 @@ class OpenAIHandler:
                 )
 
                 chat_message = OpenAIClient.decode_completion_to_chat_message(completion, chat_message.model)
-                print(chat_message)
+                
+                cleaned_message = OpenAIClient.remove_possible_repetitions(chat_message.message, 'bot:')
+                chat_message.message = cleaned_message
                 return chat_message
 
         except Exception as e:

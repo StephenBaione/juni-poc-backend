@@ -2,20 +2,23 @@ from google.cloud import speech
 
 import threading
 
-from typing import Function
+from typing import Callable
 
 import queue
 
 class SpeechToTextService:
-    def __init__(self, on_response: Function) -> None:
+    def __init__(self, on_response: Callable, decode_queue: queue.Queue) -> None:
         self._ended = True
         self._on_response = on_response
+        
+        self.audio_queue = queue.Queue()
+        self.decode_queue = decode_queue
 
     def start(self):
         self._ended = False
 
         client = speech.SpeechClient()
-        stream = self.generator()
+        stream = self.get_generator()
         requests = (
             speech.StreamingRecognizeRequest(audio_content=chunk) for chunk in stream
         )
@@ -45,23 +48,28 @@ class SpeechToTextService:
     def terminate(self):
         self._ended = True
 
+    def add_request(self, buffer):
+        if buffer is None:
+            self.audio_queue.put(None, block=False)
+        self.audio_queue.put(bytes(buffer), block=False)
+
     def get_process_thread(self):
         return threading.Thread(target=self.start)
 
-    def get_generator(self, decode_queue: queue.Queue):
+    def get_generator(self):
         while not self._ended:
             # Use a blocking get() to ensure there's at least one chunk of
             # data, and stop iteration if the chunk is None, indicating the
             # end of the audio stream.
-            chunk = decode_queue.get()
+            chunk = self.audio_queue.get()
             if chunk is None:
                 return
             data = [chunk]
 
             # Now consume whatever other data's still buffered.
-            while not decode_queue.empty():
+            while True:
                 try:
-                    chunk = decode_queue.get(block=False)
+                    chunk = self.audio_queue.get(block=False)
                     if chunk is None:
                         return
                     data.append(chunk)

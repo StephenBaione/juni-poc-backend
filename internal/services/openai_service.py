@@ -4,6 +4,8 @@ import os
 import json
 import openai
 
+from internal.request_models.openai_requests import ChatMessage
+
 import requests
 
 from tqdm import tqdm
@@ -15,6 +17,14 @@ from uuid import uuid4
 from ..request_models.openai_requests import ChatMessage
 
 from dotenv import load_dotenv
+
+import enum
+
+class KnownModels(enum.Enum):
+    GPT_3_5_TURBO = 'gpt-3.5-turbo'
+    TEXT_DAVINCI_3 = 'text-davinci-003'
+    TEXT_DAVINCI_2 = 'text-davinci-002'
+    CODE_DAVINCI_1 = 'code-davinci-001'
 
 class OpenAIClient:
     def __init__(self) -> None:
@@ -334,6 +344,32 @@ class OpenAIClient:
                 json.dump(embeddings, file)
 
         return [embedding['embedding'] for embedding in embeddings]
+    
+    @staticmethod
+    def remove_possible_repetitions(text: str, remove_text: str) -> str:
+        """Remove possible repetitions of text.
+
+        Args:
+            text (str): Text to be cleaned
+            remove_text (str): Text to be removed
+
+        Returns:
+            str: Cleaned text
+        """
+        if remove_text in text:
+            text = text.replace(remove_text, '')
+
+        return text.strip()
+    
+class OpenAIService:
+    def __init__(self) -> None:
+        self.openai_client = OpenAIClient()
+
+    def build_history_from_pinecone(self, conversation_id, chat_message: ChatMessage, top_k = 5):
+        history = []
+
+        # Convert message to vector
+        message_vector = self.openai_client.get_embeddings(chat_message.message)
 
 # ft-flAx5eIeboyMYTc50W2KnEfK
 

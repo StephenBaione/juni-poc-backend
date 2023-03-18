@@ -1,7 +1,8 @@
 import pinecone
 
-from dotenv import load_dotenv
 import os
+from dotenv import load_dotenv
+load_dotenv()
 
 import pydantic
 import typing
@@ -60,13 +61,20 @@ class PineConeItem(pydantic.BaseModel):
     def upsert_tuple(item: 'PineConeItem'):
         return item.id, item.vector, item.metadata
 
+class PineConeIndex(pydantic.BaseModel):
+    index_name: str
+    environment_name: os.getenv('PINECONE_ENVIRONMENT')
+    dimensions: int
+    pod_type: str
+    pods_per_replica: str
+    replicas: str
+    total_pods: str
+    metric: str = 'cosine'
 
 class PineconeService:
     index_map = {}
 
     def __init__(self) -> None:
-        load_dotenv()
-
         self.pine_cone_api_key = os.getenv('PINECONE_API_KEY')
         self.pine_cone_environment = os.getenv('PINECONE_ENVIRONMENT')
         self.pine_cone_index_name = os.getenv('PINECONE_INDEX_NAME')

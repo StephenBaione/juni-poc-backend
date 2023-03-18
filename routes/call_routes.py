@@ -16,10 +16,11 @@ openai_client = OpenAIClient()
 from internal.services.text_to_speech_service import TextToSpeechService
 
 from internal.request_models.call_requests import CallRequest
+from internal.services.call_service_bridge import CallServiceBridge
 
 from fastapi import APIRouter, Response, Depends, Request, WebSocket
 from fastapi.responses import StreamingResponse
-from starlette.websockets import WebSocketState
+from starlette.websockets import WebSocketState, WebSocketDisconnect
 
 from twilio.twiml.voice_response import VoiceResponse, Connect, Stream, Gather, Redirect, Start
 
@@ -262,20 +263,16 @@ async def speak_loop(websocket: WebSocket, _buffer: queue.Queue, speech_client_b
 async def websocket_endpoint(websocket: WebSocket, conversation_id):
     await websocket.accept()
 
+    call_service_bridge = CallServiceBridge(
+        websocket
+    )
+
     print('loop')
-    decode_queue = queue.Queue()
-    transcription_queue = queue.Queue()
-    kill_queue = queue.Queue()
-    speech_client_bridge = SpeechClientBridge(on_transcription_response, decode_queue)
-    while True:
-        try:
-            await listen_loop(websocket, decode_queue, speech_client_bridge, transcription_queue, kill_queue)
-            await speak_loop(websocket, decode_queue, speech_client_bridge, transcription_queue)
-
-        except Exception as e:
-            print(e, 'breaking', type(e))
-            break
-
-    transcription_queue.put('||STOP||', block=False)
-    kill_queue.put('||STOP||', block=False)
-    await websocket.close()
+    try:
+        call_service_bridge.bi_directional_task()
+    except WebSocketDisconnect as websocket_disconnect:
+        print(websocket_disconnect)
+        call_service_bridge.terminate()
+        return
+    finally:
+        return await websocket.close()

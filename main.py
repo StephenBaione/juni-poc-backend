@@ -10,8 +10,11 @@ from internal.services.speechRecognitionSerice import SpeechRecognitionService
 
 from internal.clients.web_socket_client import WebSocketClient
 
+from internal.handlers.pinecone_handlers import PineConeHandler
+
 from routes.openai_routes import openai_router
 from routes.call_routes import call_router
+from routes.azure_speech_routes import azure_speech_router
 
 from internal.services.text_to_speech_service import TextToSpeechService
 
@@ -50,6 +53,7 @@ app.add_middleware(
 
 app.include_router(openai_router)
 app.include_router(call_router)
+app.include_router(azure_speech_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',
@@ -74,10 +78,11 @@ class ConnectionManager:
 
     async def disconnect(self, websocket: WebSocket, client_id=None) -> None:
         self.active_connections.remove(websocket)
-        await websocket.close()
 
-        if client_id and client_id in clients:
-            ConnectionManager.stop_recognition_stream(client_id)
+        try:
+            await websocket.close()
+        except Exception as e:
+            print('disconnect', e)
 
     async def send_personal_message(self, message: str, websocket: WebSocket) -> None:
         await websocket.send_text(message)
@@ -137,11 +142,6 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         print('disconnecting...')
         await GoogleSpeechWrapper.stop_recognition_stream(client_id)
 
-
-import pyaudio
-import wave
-import io
-
 from pydantic import BaseModel
 
 from typing import Optional
@@ -158,36 +158,11 @@ async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
         voice = 'en-US-Wavenet-A' if voice is None else voice
         language_code = 'en-US'
 
-        # Instantiates a client
-        client = texttospeech.TextToSpeechClient()
-
-        # Set the text input to be synthesized
-        synthesis_input = texttospeech.SynthesisInput(text=text)
-
-        # Build the voice request, select the language code ("en-US") and the ssml
-        # voice gender ("neutral")
-        voice = texttospeech.VoiceSelectionParams(
-            language_code=language_code, name=voice
-        )
-
-        # Select the type of audio file you want returned
-        audio_config = texttospeech.AudioConfig(
-            audio_encoding=texttospeech.AudioEncoding.OGG_OPUS
-        )
-
-        # Perform the text-to-speech request on the text input with the selected
-        # voice parameters and audio file type
-        response = client.synthesize_speech(
-            input=synthesis_input, voice=voice, audio_config=audio_config
-        )
-
-        def audio_generator():
-            for chunk in response.audio_content:
-                print('\n\n\n\n' + str(chunk))
-                yield bytes(chunk)
+        text_to_speech_service = TextToSpeechService(voice, language_code)
+        audio_content = text_to_speech_service.talk(text)
 
         # return StreamingResponse(audio_generator(), media_type='audio/mp3')
-        return Response(content=response.audio_content, media_type='audio/webm;codecs=vp9,opus')
+        return Response(content=audio_content, media_type='audio/webm;codecs=vp9,opus')
 
     except WebSocketDisconnect as websocket_disconect:
         print(websocket_disconect)
@@ -197,79 +172,5 @@ async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
         print(e)
         return {'error': str(e)}
 
-def test(file):
-    import io
-    from google.cloud import speech
-
-    client = speech.SpeechClient.from_service_account_file(
-        os.path.join('creds', 'google_speech_secret_key.json'))
-    with io.open(file, 'rb') as audio_file:
-        content = audio_file.read()
-
-    stream = []
-
-    requests = (
-        speech.StreamingRecognizeRequest(audio_content=chunk) for chunk in stream
-    )
-
-    config = speech.RecognitionConfig(
-        encoding=speech.RecognitionConfig.AudioEncoding.LINEAR16,
-        sample_rate_hertz=16000,
-        language_code="en-US",
-    )
-
-    streaming_config = speech.StreamingRecognitionConfig(config=config)
-
-    # streaming_recognize returns a generator.
-    responses = client.streaming_recognize(
-        config=streaming_config,
-        requests=requests,
-    )
-
-    # requests = (speech.StreamingRecognizeRequest(audio_content=chunk) for chunk in stream)
-    for response in responses:
-        # Once the transcription has settled, the first result will contain the
-        # is_final result. The other results will be for subsequent portions of
-        # the audio.
-        for result in response.results:
-            print("Finished: {}".format(result.is_final))
-            print("Stability: {}".format(result.stability))
-            alternatives = result.alternatives
-            # The alternatives are ordered from most likely to least.
-            for alternative in alternatives:
-                print("Confidence: {}".format(alternative.confidence))
-                print("Transcript: {}".format(alternative.transcript))
-
-
 if __name__ == '__main__':
     uvicorn.run('main:app', host='localhost', port=8000, reload=True)
-    # test('test.wav')
-
-    # class thing:
-    #     def __init__(self):
-    #         self.test = queue.Queue()
-    #         self.closed = True
-    #     def write(self, data):
-    #         self.test.put(data)
-    #     def generator(self):
-    #         while not self.closed:
-    #             chunk = self.test.get()
-    #             if chunk is None:
-    #                     return
-    #             data = [chunk]
-    #             while True:
-    #                 try:
-    #                     chunk = self.test.get(block=False)
-    #                     if chunk is None:
-    #                             return
-    #                     data.append(chunk)
-    #                 except queue.Empty:
-    #                     break
-    #             yield b"".join(data)
-
-    # test_thing = thing()
-    # gen = test_thing.generator()
-    # test_thing.write('a')
-    # test_thing.write('b')
-    # data = [x for x in gen]
-    # print(data)
