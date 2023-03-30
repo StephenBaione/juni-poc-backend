@@ -38,8 +38,10 @@ app = FastAPI()
 origins = [
     'http://localhost',
     'http://localhost:3000',
+    'http://localhost:3001',
     'ws://localhost:3000',
     'http://localhost:8000',
+    'http://localhost:8001',
     'http://localhost:8080'
 ]
 
@@ -173,4 +175,4 @@ async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
         return {'error': str(e)}
 
 if __name__ == '__main__':
-    uvicorn.run('main:app', host='localhost', port=8000, reload=True)
+    uvicorn.run('main:app', host='localhost', port=8001, reload=True)
