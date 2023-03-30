@@ -21,6 +21,25 @@ import json
 
 from urllib.parse import unquote
 
+# TEXT TO SPEECH
+@azure_speech_router.post('/tts/synthesize')
+async def synthesize(response: Response, text: str = Body(...)):
+    request_id = str(uuid4())
+
+    text = json.loads(text)['text']
+    text = unquote(text)
+    print(text)
+
+    response.status_code = status.HTTP_200_OK
+    result = azure_speech_handler.handle_text_to_speech_post(text)
+
+    if result is None:
+        response.status_code = status.HTTP_500_INTERNAL_SERVER_ERROR
+        return {'message': 'Internal Server Error'}
+    
+    return result
+
+# VISEME ROUTES
 @azure_speech_router.post('/viseme')
 async def viseme(response: Response, text: str = Body(...)):
     request_id = str(uuid4())
@@ -44,6 +63,7 @@ async def viseme_stream(websocket: WebSocket, request_id: int):
 
     kill_event = asyncio.Event()
 
+# SPEECH TO TEXT
 @azure_speech_router.websocket('/stt/transcribe')
 async def stt_trackscribe(websocket: WebSocket):
     try:

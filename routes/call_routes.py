@@ -267,7 +267,6 @@ async def websocket_endpoint(websocket: WebSocket, conversation_id):
         websocket
     )
 
-    print('loop')
     try:
         call_service_bridge.bi_directional_task()
     except WebSocketDisconnect as websocket_disconnect:

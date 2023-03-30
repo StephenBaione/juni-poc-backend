@@ -176,7 +176,8 @@ class SocketService:
         loop_events: LoopEvents,
         queue: queue.Queue,
         message_type: MessageTypes,
-        callbacks: LoopCallBacks = None):
+        callbacks: LoopCallBacks = None,
+        sendMessageEvent: Optional[asyncio.Event] = None):
 
         kill_event = loop_events.kill_event
         run_event = loop_events.run_event
@@ -195,15 +196,10 @@ class SocketService:
 
                     if not queue.empty():
 
-                        print('sending', queue.qsize())
-
                         if before_queue_op is not None:
                             before_queue_op()
 
-                        print('Getting data from queue')
                         data = queue.get(block=False)
-
-                        print(data)
 
                         if after_queue_op is not None:
                             data = after_queue_op(data)
@@ -212,7 +208,6 @@ class SocketService:
                             before_socket_op()
 
                         try:
-                            print('Sending data to client')
                             await SocketService.connection_manager.send_message(
                                 websocket,
                                 message_type,
@@ -220,15 +215,13 @@ class SocketService:
                             )
                         
                         except Exception as e:
-                            print('start_send_loop', e)
                             run_event.set()
                             kill_event.set()
 
                         if after_socket_op is not None:
                             after_socket_op()
 
-                    print('empty queue')
-                    await asyncio.sleep(0.05)
+                    await asyncio.sleep(0.02)
                 except Exception as e:
                     print('send_data_loop', e)
                     break

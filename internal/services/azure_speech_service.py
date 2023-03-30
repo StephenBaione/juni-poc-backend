@@ -35,11 +35,16 @@ class AzureRecognitionCallbacks(BaseModel):
     session_started: Optional[Callable] = None
     session_stopped: Optional[Callable] = None
 
+class StaticEventTags(enum.Enum):
+    SEND = '_send'
+
 class AzureSpeechService:
     active_speech_recognizers = {}
 
     client_id_to_session_id = {}
     session_id_to_client_id = {}
+
+    static_events = {}
 
     api_key = os.getenv("AZURE_COGNITIVE_SERVICES_API_KEY_1")
     service_region = os.getenv("AZURE_COGNITIVE_SERVICES_REIGON")
@@ -47,6 +52,14 @@ class AzureSpeechService:
 
     speech_sdk = azure_speechsdk
     firebase_storage = FirebaseStorage()
+
+    @staticmethod
+    def set_static_event(client_id: str, event: asyncio.Event, suffix: StaticEventTags):
+        AzureSpeechService.static_events[f"{client_id}{suffix.value}"] = event
+
+    @staticmethod
+    def get_static_event(client_id: str, suffix: StaticEventTags):
+        return AzureSpeechService.static_events.get(f"{client_id}{suffix.value}", None)
 
     def recognize_speech_from_file(self, file_path: str) -> str:
         audio_config = AudioConfig(filename=file_path)
