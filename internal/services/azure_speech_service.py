@@ -53,23 +53,6 @@ class AzureSpeechService:
     speech_sdk = azure_speechsdk
     firebase_storage = FirebaseStorage()
 
-    @staticmethod
-    def set_static_event(client_id: str, event: asyncio.Event, suffix: StaticEventTags):
-        AzureSpeechService.static_events[f"{client_id}{suffix.value}"] = event
-
-    @staticmethod
-    def get_static_event(client_id: str, suffix: StaticEventTags):
-        return AzureSpeechService.static_events.get(f"{client_id}{suffix.value}", None)
-
-    def recognize_speech_from_file(self, file_path: str) -> str:
-        audio_config = AudioConfig(filename=file_path)
-        speech_recognizer = SpeechRecognizer(
-            speech_config=AzureSpeechService.speech_config, audio_config=audio_config
-        )
-
-        result = speech_recognizer.recognize_once_async().get()
-        return result.text
-
     def recognize_speech_from_stream(self, stream: bytes) -> str:
         audio_config = AudioConfig(
             stream=PullAudioInputStream(stream)
@@ -149,9 +132,6 @@ class AzureSpeechService:
             evt.audio_offset / 10000, evt.viseme_id))
         # `Animation` is an xml string for SVG or a json string for blend shapes
         animation = evt.animation
-
-    def _get_synthesizer_stream(self, synthesize: SpeechSynthesisResult):
-        return synthesize.audio_data
     
     @staticmethod
     def load_azure_ssml_cfg():
@@ -165,39 +145,9 @@ class AzureSpeechService:
         viseme_path = os.path.join(os.path.dirname(__file__), "cfg", "azure_viseme_cfg.json")
         with open(viseme_path, 'r') as f:
             return json.load(f)
-        
-    @staticmethod
-    def format_viseme_result(viseme_result, viseme_cfg = None):
-        if viseme_cfg is None:
-            viseme_cfg = AzureSpeechService.load_azure_viseme_cfg()
-
-        audio_offset = viseme_result.audio_offset
-        viseme_id = viseme_result.viseme_id
-        animation = viseme_result.animation
-
-        if animation == '':
-            return {
-                'AudioOffset': audio_offset,
-                'VisemeId': viseme_id,
-                'Animation': animation
-            }
-        
-        animation = json.loads(animation)
-
-        fps = 60
-        timestep = 1 / fps
-        blend_data = []
-
-
-
-
 
     @staticmethod
     def text_to_ssml(text):
-        # Replace special characters with HTML Ampersand Character Codes
-        # These Codes prevent the API from confusing text with
-        # SSML commands
-        # For example, '<' --> '&lt;' and '&' --> '&amp;'
         ssml_cfg = AzureSpeechService.load_azure_ssml_cfg()['tags']
         root_tags = ssml_cfg['root_tags']
 
@@ -253,20 +203,6 @@ class AzureSpeechService:
             speech_recognizer.session_started.connect(session_started)
         if session_stopped is not None:
             speech_recognizer.session_stopped.connect(session_stopped)
-
-    @staticmethod
-    def track_client_and_session(client_id: str, session_id: str):
-        AzureSpeechService.client_id_to_session_id[client_id] = session_id
-        AzureSpeechService.session_id_to_client_id[session_id] = client_id
-
-    @staticmethod
-    def remove_client_and_session(client_id: str, session_id: str):
-        if AzureSpeechService.client_id_to_session_id.get(client_id, None) is None or \
-        AzureSpeechService.session_id_to_client_id.get(session_id, None) is None:
-            return
-
-        del AzureSpeechService.client_id_to_session_id[client_id]
-        del AzureSpeechService.session_id_to_client_id[session_id]
     
     def recognize_text_from_audio_stream(
             self, 
@@ -275,26 +211,28 @@ class AzureSpeechService:
             recognition_callbacks: AzureRecognitionCallbacks,
             kill_event: asyncio.Event
         ):
+
+        # Set up recognition
         stream = PushAudioInputStream()
         audio_config = AudioConfig(stream=stream)
         speech_recognizer = SpeechRecognizer(
             speech_config=AzureSpeechService.speech_config, audio_config=audio_config
         )
 
+        # Assign callbacks to recognizer
         AzureSpeechService.assign_recognition_callbacks(speech_recognizer, recognition_callbacks)
-        # speech_recognizer.recognizing.connect(lambda evt: print('RECOGNIZING: {}'.format(evt.result.text)))
-        # speech_recognizer.recognized.connect(lambda evt: print('RECOGNIZED: {}'.format(evt.result.text)))
-        # speech_recognizer.canceled.connect(lambda evt: print('CANCELED: {}'.format(evt.result.text)))
-        # speech_recognizer.session_started.connect(lambda evt: print('SESSION STARTED: {}'.format(evt.result.text)))
-        # speech_recognizer.session_stopped.connect(lambda evt: print('SESSION STOPPED {}'.format(evt.result.text)))
 
+        # Get session id to be able to correlate with client request
         session_id = speech_recognizer.properties.get_property(PropertyId.Speech_SessionId)
 
+        # Correlate seesion id with client request
         AzureSpeechService.client_id_to_session_id[client_id] = session_id
         AzureSpeechService.session_id_to_client_id[session_id] = client_id
 
+        # Start recognition
         speech_recognizer.start_continuous_recognition_async()
 
+        # Start recognition loop
         while True:
             if kill_event.is_set():
                 break
@@ -303,6 +241,7 @@ class AzureSpeechService:
             if stop:
                 break
 
+            # If audio is sent to queue, write it to the stream
             while not audio_queue.empty():
                 audio = audio_queue.get(block=False)
                 if audio is None:
@@ -311,6 +250,7 @@ class AzureSpeechService:
 
                 stream.write(audio)
 
+        # Stop recognition
         stream.close()
         speech_recognizer.stop_continuous_recognition_async()
 
@@ -329,11 +269,14 @@ class AzureSpeechService:
         # Convert text to ssml
         ssml = AzureSpeechService.text_to_ssml(text)
 
+        # Start speech synthesis, and wait for a result.
         result = speech_synthesizer.speak_ssml_async(str(ssml)).get()
 
+        # Log completion
         if result.reason == ResultReason.SynthesizingAudioCompleted:
             print("Speech synthesized to speaker for text [{}]".format(text))
 
+        # Log failure
         elif result.reason == ResultReason.Canceled:
             cancellation_details = result.cancellation_details
             print("Speech synthesis canceled: {}".format(cancellation_details.reason))
@@ -342,9 +285,3 @@ class AzureSpeechService:
                 print("Error details: {}".format(cancellation_details.error_details))
 
         return result
-
-# if __name__ == '__main__':
-#     az_service = AzureSpeechService()
-    
-#     result = az_service.synthesize_speech_with_viseme("The rainbow has seven colors.")
-#     print(result.audio_data.getvalue())

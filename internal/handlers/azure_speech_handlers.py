@@ -1,14 +1,10 @@
-from ..services.azure_speech_service import AzureSpeechService, AzureRecognitionCallbacks, ResultReason, PropertyId, SpeechRecognitionEventArgs, SpeechRecognitionCanceledEventArgs, SessionEventArgs, StaticEventTags
+from ..services.azure_speech_service import AzureSpeechService, AzureRecognitionCallbacks, ResultReason, PropertyId, SpeechRecognitionEventArgs, SessionEventArgs
 
 from data.firebase.result_objects.storage_results import FileOperationResult
 
-from starlette.websockets import WebSocketState, WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect
 
 from fastapi import WebSocket
-
-from uuid import uuid4
-
-import base64
 
 import json
 
@@ -139,7 +135,7 @@ class AzureSpeechHandler:
         receive_queue, send_queue = SocketService.get_bidirectional_queues(
             websocket)
 
-        loop_task = await SocketService.start_loop(
+        await SocketService.start_loop(
             websocket,
             receive_queue=receive_queue,
             send_queue=send_queue,
@@ -225,30 +221,17 @@ class AzureSpeechHandler:
     def handle_speech_synthesis_viseme_request(
         self,
         text: str,
-        client_id: str,
-        websocket: WebSocket,
-        kill_event: asyncio.Event,
     ) -> dict:
 
         try:
-            process_obj = {
-                "client_id": client_id,
-                "kill_event": kill_event,
-                "viseme_queue": queue.Queue(),
-                "websocket": websocket
-            }
-
             async_event_loop = asyncio.get_event_loop()
             send_viseme_task = async_event_loop.create_task(
                 self.send_viseme_loop())
 
             async_event_loop.run_until_complete(send_viseme_task)
 
-            import threading
-            thread = threading.Thread(
-                self.azure_speech_service.synthesize_speech_with_viseme)
-            self.azure_speech_service.synthesize_speech_with_viseme(
-                text, viseme_callback=self._viseme_stream_callback)
+            self.azure_speech_service.synthesize_speech_with_viseme(text, viseme_callback=self._viseme_stream_callback)
+
         except Exception as e:
             print(e)
             return None
@@ -296,9 +279,6 @@ class AzureSpeechHandler:
                 }
 
                 self._send_data_to_client(client_id, SendQueueTypes.TRANSCRIBE_STREAM_RECOGNIZED, data)
-
-                final_index = event.result.properties.get(PropertyId.SpeechServiceResponse_JsonResult)
-                print(final_index)
         except Exception as e:
             print('RECOGNIZED ERROR', e)
     
@@ -382,5 +362,3 @@ class AzureSpeechHandler:
         except Exception as e:
             print(e)
             send_loop_events.kill_event.set()
-        # await receive_loop_events.kill_event.wait()
-        # threading.Thread.join(recognition_thread)
