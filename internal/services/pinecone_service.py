@@ -11,6 +11,8 @@ from uuid import uuid4
 
 import itertools
 
+from .dynamodb_service import DynamoDBService
+
 
 class MetaDataConfig(pydantic.BaseModel):
     indexed: typing.List[str]
@@ -81,11 +83,19 @@ class PineconeService:
 
         pinecone.init(api_key=self.pine_cone_api_key,
                       environment=self.pine_cone_environment)
+        
+        self.dynamodb_service = DynamoDBService('pinecone-index')
 
     @staticmethod
     def create_index(name: str, dimension: int, metadata_config=MetaDataConfig):
         return pinecone.create_index(name=name, dimension=dimension,
                               metadata_config=metadata_config)
+    
+    def save_index_to_db(self, index: PineConeIndex):
+        dynamodb_service = self.dynamodb_service
+
+        print(index)
+        return dynamodb_service.update_item(index)
 
     @staticmethod
     def delete_index(name: str):

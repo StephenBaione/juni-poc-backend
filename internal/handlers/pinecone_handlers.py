@@ -1,6 +1,6 @@
-from ..services.pinecone_service import PineconeService, PineConeItem, MetaDataConfig
+from ..services.pinecone_service import PineconeService, PineConeItem
 
-from ..services.openai_service import OpenAIClient
+from data.pinecone.pinecone_index import PineConeIndex
 
 from uuid import uuid4
 
@@ -9,7 +9,6 @@ import typing
 class PineConeHandler:
     def __init__(self) -> None:
         self.pinecone_service = PineconeService()
-        self.openai_client = OpenAIClient()
 
     def handle_search_by_plain_text(self, text: str, index_name: str, top_k: int = 5) -> typing.List[PineConeItem]:
         # Get embeddings from openai_client
@@ -24,6 +23,15 @@ class PineConeHandler:
 
         # Return the results
         return search_result
+    
+    def handle_add_index_to_db(self, pinecone_index: PineConeIndex):
+        _id = pinecone_index.id
+
+        if _id is None:
+            pinecone_index.set_id()
+
+        result = self.pinecone_service.save_index_to_db(pinecone_index)
+        return result
     
 if __name__ == '__main__':
     pc_handler = PineConeHandler()

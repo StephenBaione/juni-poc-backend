@@ -8,6 +8,7 @@ from internal.services.speechRecognitionSerice import SpeechRecognitionService
 from routes.openai_routes import openai_router
 from routes.call_routes import call_router
 from routes.azure_speech_routes import azure_speech_router
+from routes.pinecone_routes import pinecone_router
 
 from internal.services.text_to_speech_service import TextToSpeechService
 
@@ -47,6 +48,7 @@ app.add_middleware(
 app.include_router(openai_router)
 app.include_router(call_router)
 app.include_router(azure_speech_router)
+app.include_router(pinecone_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',

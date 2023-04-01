@@ -1,11 +1,12 @@
-from fastapi import APIRouter, Depends, Response, status
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter
+from internal.handlers.pinecone_handlers import PineConeHandler
+from data.pinecone.pinecone_index import PineConeIndex
 
-from internal.request_models import openai_requests
+pinecone_handler = PineConeHandler()
 
-from internal.handlers.openai_handlers import OpenAIHandler
+pinecone_router = APIRouter(prefix='/pinecone', tags=['Pinecone'])
 
-openai_handler = OpenAIHandler()
-
-openai_router = APIRouter(prefix='/openai', tags=['OpenAI'])
+@pinecone_router.post('/add_index_to_db')
+async def add_index_to_db(pinecone_index: PineConeIndex):
+    return pinecone_handler.handle_add_index_to_db(pinecone_index=pinecone_index)
 
