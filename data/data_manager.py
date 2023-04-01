@@ -4,8 +4,6 @@ import os
 import jsonlines
 import string
 
-from openai_api import OpenAIClient
-
 from typing import Callable
 
 class DataItem:
