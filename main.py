@@ -1,16 +1,9 @@
-from google.cloud import speech
-import queue
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Depends
 from starlette.websockets import WebSocketState
-from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from internal.services.speechRecognitionSerice import SpeechRecognitionService
-
-from internal.clients.web_socket_client import WebSocketClient
-
-from internal.handlers.pinecone_handlers import PineConeHandler
 
 from routes.openai_routes import openai_router
 from routes.call_routes import call_router
@@ -23,8 +16,6 @@ from google_speech_wrapper import GoogleSpeechWrapper
 from dotenv import load_dotenv
 
 import asyncio
-
-import threading
 
 import uvicorn
 import os
