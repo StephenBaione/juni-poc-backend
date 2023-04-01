@@ -23,6 +23,12 @@ class PineConeHandler:
 
         # Return the results
         return search_result
+
+    def get_index(self, index_id):
+        return self.pinecone_service.get_index(index_id)
+    
+    def get_index_by_name(self, index_name: str):
+        return self.pinecone_service.get_index_by_name(index_name)
     
     def handle_add_index_to_db(self, pinecone_index: PineConeIndex):
         _id = pinecone_index.id
@@ -32,6 +38,12 @@ class PineConeHandler:
 
         result = self.pinecone_service.save_index_to_db(pinecone_index)
         return result
+    
+    def handle_update_index_in_db(self, pinecone_index: PineConeIndex):
+        return self.pinecone_service.update_index_in_db(pinecone_index)
+
+    def delete_index_from_db(self, item_id: str):
+        return self.pinecone_service.delete_index_from_db(item_id)
     
 if __name__ == '__main__':
     pc_handler = PineConeHandler()

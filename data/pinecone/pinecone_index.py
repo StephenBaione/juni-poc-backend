@@ -22,37 +22,28 @@ class PineConeIndex(BaseModel):
     total_pods: int
     metric: str = 'cosine'
 
+    @staticmethod
+    def from_dict(pineconde_index_as_dict: dict) -> "PineConeIndex":
+        # Required values
+        index_name = pineconde_index_as_dict['index_name']
+        dimensions = pineconde_index_as_dict['dimensions']
+        pod_type = pineconde_index_as_dict['pod_type']
+        pods_per_replica = pineconde_index_as_dict['pods_per_replica']
+        replicas = pineconde_index_as_dict['replicas']
+        total_pods = pineconde_index_as_dict['total_pods']
+
+        # Optional Values
+        _id = pineconde_index_as_dict.get('id', None)
+
+        return PineConeIndex(
+            id=_id,
+            index_name=index_name,
+            dimensions=dimensions,
+            pod_type=pod_type,
+            pods_per_replica=pods_per_replica,
+            replicas=replicas,
+            total_pods=total_pods
+        )
+
     def set_id(self):
         self.id = str(uuid4())
-
-    def to_dynamo_object(self):
-        return {
-            '_id': {
-                'S': self._id
-            },
-            'index_name': {
-                'S': self.index_name
-            },
-            'environment_name': {
-                'S': self.environment_name
-            },
-            'dimensions': {
-                'N': self.dimensions
-            },
-            'pod_type': {
-                'S': self.pod_type
-            },
-            'pods_per_replica': {
-                'S': self.pods_per_replica
-            },
-            'replicas': {
-                'S': self.replicas
-            },
-            'total_pods': {
-                'S': self.total_pods
-            },
-            'metric': {
-                'S': self.metric
-            }
-        }
-

@@ -11,7 +11,7 @@ from uuid import uuid4
 
 import itertools
 
-from .dynamodb_service import DynamoDBService
+from .dynamodb_service import DynamoDBService, ItemCrudResponse, Key
 
 
 class MetaDataConfig(pydantic.BaseModel):
@@ -91,11 +91,32 @@ class PineconeService:
         return pinecone.create_index(name=name, dimension=dimension,
                               metadata_config=metadata_config)
     
+    def get_index(self, index_id: str):
+        return self.dynamodb_service.get_item(index_id)
+    
+    def get_index_by_name(self, index_name: str):
+        filter_expression = Key('index_name').eq(index_name)
+
+        return self.dynamodb_service.scan_table(filter_expression, limit=1)
+
     def save_index_to_db(self, index: PineConeIndex):
         dynamodb_service = self.dynamodb_service
 
-        print(index)
         return dynamodb_service.update_item(index)
+    
+    def delete_index_from_db(self, item_id: str) -> ItemCrudResponse:
+        return self.dynamodb_service.delete_item(item_id)
+    
+    def update_index_in_db(self, index: PineConeIndex):
+        item_id = index.id
+
+        get_response = self.dynamodb_service.get_item(item_id)
+
+        # If item is empty, or not successful, return crud response
+        if not get_response.success or not get_response.Item:
+            return get_response
+        
+        return self.dynamodb_service.update_item(index)
 
     @staticmethod
     def delete_index(name: str):
