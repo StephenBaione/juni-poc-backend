@@ -20,6 +20,8 @@ from dotenv import load_dotenv
 
 import enum
 
+from datetime import datetime
+
 class KnownModels(enum.Enum):
     GPT_3_5_TURBO = 'gpt-3.5-turbo'
     TEXT_DAVINCI_3 = 'text-davinci-003'
@@ -340,7 +342,7 @@ class OpenAIClient:
         embeddings = openai.Embedding.create(input = batch_text, model=model)['data']
 
         if save:
-            with open(os.path.join(os.path.dirname(__file__), 'temp', f'embedding_{uuid4()}.json'), 'w') as file:
+            with open(os.path.join(os.path.dirname(__file__), 'temp', f'embedding_{str(datetime.now())}.json'), 'w') as file:
                 json.dump(embeddings, file)
 
         return [embedding['embedding'] for embedding in embeddings]

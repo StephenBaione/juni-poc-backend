@@ -1,8 +1,9 @@
 import os
+import re
 import jsonlines
 import string
 
-from typing import Callable
+from typing import Callable, Tuple, List
 
 from io import BytesIO
 
@@ -45,7 +46,7 @@ class DataManager:
         except Exception as e:
             raise e
         
-    def chunk_pdf(self, pdf_file: PDFFile, by_paragraph=True, max_chunk_size=1500, save_chunks=False):
+    def chunk_pdf(self, pdf_file: PDFFile, by_paragraph=True, max_chunk_size=1500, save_chunks=False) -> dict:
         """Chunk the contents of a PDFFile object
 
         Args:
@@ -55,6 +56,10 @@ class DataManager:
 
         Raises:
             ValueError: _description_
+
+        Returns:
+            parse_results (dict): A dictionary containing the results from chunking the pdf in the following format:
+                (page_number: int, paragraph_number: int): chunked_text: str
         """
         pdf_file_config = pdf_file.pdf_file_config
 
@@ -65,30 +70,44 @@ class DataManager:
         multicolumn = pdf_file_config.multicolumn
         num_col_per_page = pdf_file_config.num_col_per_page
 
+        parse_results = {}
         chunks = []
-        for page in pdf_doc.pages:
+        for page_number, page in enumerate(pdf_doc.pages):
             paragraphs = self.extract_paragraphs(page, multicolumn, num_col_per_page)
 
-            for paragraph in paragraphs:
+            for paragraph_number, paragraph in enumerate(paragraphs):
+                # Replace multiple white spaces with single white space
+                # paragraph = re.sub(r'\n\n+', r'\n', paragraph)
+                # paragraph = re.sub(r'\s\s+', r' ', paragraph)
+                paragraph = self.get_printable_chars(paragraph)
+
                 if paragraph.isspace() or len(paragraph) < 10:
                     continue
 
-                chunks.extend(self.split_large_paragraphs(paragraph, max_chunk_size))
+                subparagraphs, num_paragraphs = self.split_large_paragraphs(paragraph, max_chunk_size)
+                chunks.extend(subparagraphs)
+
+                if num_paragraphs == 0:
+                    continue
+
+                for num_paragraph in range(num_paragraphs):
+                    parse_results[(page_number, num_paragraph)] = subparagraphs[num_paragraph]
 
         if save_chunks:
             from datetime import datetime
 
-            folder_path = os.path.join(self.raw_training_path, 'chunks', 'results')
+            file_name = pdf_file.file_name[:-3]
+            folder_path = os.path.join(self.raw_training_path, 'chunks', 'results', file_name)
             if not os.path.exists(folder_path):
                 os.makedirs(folder_path)
 
             file_path = os.path.join(folder_path, f"{str(datetime.now())}.txt")
             with open(file_path, 'w+') as file:
-                for chunk in chunks:
-                    file.write('\n\n\n\n-------- CHUNK --------\n\n\n\n')
+                for (page_number, paragraph_number), chunk in parse_results.items():
+                    file.write(f'\n\n\n\n-------- PageNumber: {page_number}, ParagraphNumber: {paragraph_number} --------\n\n\n\n')
                     file.write(chunk)
 
-        return chunks
+        return parse_results, chunks
     
     def list_raw_training_files(self):
         return os.listdir(os.path.join('.', 'data', 'training_raw'))
@@ -190,7 +209,16 @@ class DataManager:
 
             return left_paragraphs + right_paragraphs
 
-    def split_large_paragraphs(self, paragraph, size_limit):
+    def split_large_paragraphs(self, paragraph: str, size_limit: str) -> Tuple[List, int]:
+        """Ensure that paragraphs are under maximum size limit. Split paragraphs that are above size limit.
+
+        Args:
+            paragraph (str): Chunk of text or "paragraph" that will be split if over size_limit
+            size_limit (int): The maximum size that a chunk of text can be
+
+        Returns:
+            Tuple[List, int]: Tuple containing list of paragraphs split, and the number of paragraphs in list
+        """
         if len(paragraph) > size_limit:
             substrings = []
             lines = paragraph.split('\n')
@@ -206,15 +234,23 @@ class DataManager:
                     current_substring += '\n' + line
                 
                 else:
+                    if current_substring.isspace() or len(current_substring) < 5:
+                        current_substring = ''
+                        continue
+
                     substrings.append(current_substring)
                     current_substring = ''
 
-            substrings.append(current_substring)
+            if not current_substring.isspace() and len(current_substring) >= 5:
+                substrings.append(current_substring)
 
-            return substrings
+            if len(substrings) == 0:
+                return ([None], 0)
+
+            return (substrings, len(substrings))
 
         else:
-            return [paragraph]
+            return ([paragraph], 1)
 
     def extract_text_and_groups(self, file: pdfplumber.PDF):
         groups = {}
