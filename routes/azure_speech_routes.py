@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, Response, status, WebSocket, Body
-from fastapi.responses import StreamingResponse
+from fastapi import APIRouter, Response, status, WebSocket, Body
 
-from starlette.websockets import WebSocketState, WebSocketDisconnect
+from starlette.websockets import WebSocketDisconnect
 
 from internal.handlers.azure_speech_handlers import AzureSpeechHandler
 
 from internal.services.socket_service import ConnectionManager
-
-import asyncio
 
 from typing import Optional
 
@@ -46,7 +43,6 @@ async def viseme(response: Response, text: str = Body(...)):
 
     text = json.loads(text)['text']
     text = unquote(text)
-    print(text)
 
     response.status_code = status.HTTP_200_OK
     result = azure_speech_handler.handle_post_viseme_request(text, request_id)
@@ -58,10 +54,8 @@ async def viseme(response: Response, text: str = Body(...)):
     return result
 
 @azure_speech_router.websocket('/viseme/stream')
-async def viseme_stream(websocket: WebSocket, request_id: int):
+async def viseme_stream(websocket: WebSocket):
     await ConnectionManager.connect(websocket)
-
-    kill_event = asyncio.Event()
 
 # SPEECH TO TEXT
 @azure_speech_router.websocket('/stt/transcribe')
