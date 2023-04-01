@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, File, UploadFile
 from internal.handlers.pinecone_handlers import PineConeHandler
 from data.pinecone.pinecone_index import PineConeIndex
 
@@ -26,3 +26,6 @@ async def update_index_in_db(pinecone_index: PineConeIndex):
 async def delete_index_from_db(pinecone_index_id: str):
     return pinecone_handler.delete_index_from_db(pinecone_index_id)
 
+@pinecone_router.post('/consume_pdf')
+async def pinecone_consume_pdf(file: UploadFile):
+    return await pinecone_handler.handle_consume_pdf(file)

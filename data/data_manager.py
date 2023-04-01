@@ -1,10 +1,16 @@
-import pdfplumber
-
 import os
 import jsonlines
 import string
 
 from typing import Callable
+
+from io import BytesIO
+
+import pdfplumber
+from pdfplumber.pdf import PDF
+from pdfplumber.page import Page
+
+from .files.pdf import PDFFile, PDFFIleConfig
 
 class DataItem:
     def __init__(self, _type, index, text) -> None:
@@ -15,6 +21,74 @@ class DataItem:
 class DataManager:
     def __init__(self) -> None:
         self.raw_training_path = os.path.join('.', 'data', 'training_raw')
+
+    @staticmethod
+    def generate_pdf_file_from_name_bytes(file_name: str, file_bytes: BytesIO):
+        pdf_file_config = PDFFIleConfig.pdf_file_config_from_file_name(file_name)
+
+        pdf_file = PDFFile(
+            file_name=file_name,
+            contents=file_bytes,
+            pdf_file_config=pdf_file_config
+        )
+
+        return DataManager.add_doc_to_pdf_file(pdf_file)
+
+    @staticmethod
+    def add_doc_to_pdf_file(pdf_file: PDFFile) -> PDF:
+        contents = pdf_file.contents
+
+        try:
+            pdf_file.pdf_doc = pdfplumber.open(contents)
+            return pdf_file
+
+        except Exception as e:
+            raise e
+        
+    def chunk_pdf(self, pdf_file: PDFFile, by_paragraph=True, max_chunk_size=1500, save_chunks=False):
+        """Chunk the contents of a PDFFile object
+
+        Args:
+            pdf_file (PDFFile): PDFFile object to be chunked
+            by_paragraph (bool, optional): Control whether to chunk by paragraph or simply chunk size. Defaults to True.
+            max_chunk_size (int, optional): Control maximum size of chunk. Defaults to 1500.
+
+        Raises:
+            ValueError: _description_
+        """
+        pdf_file_config = pdf_file.pdf_file_config
+
+        pdf_doc = pdf_file.pdf_doc
+        if pdf_doc is None:
+            raise ValueError("PDF Doc must be set before chunking")
+        
+        multicolumn = pdf_file_config.multicolumn
+        num_col_per_page = pdf_file_config.num_col_per_page
+
+        chunks = []
+        for page in pdf_doc.pages:
+            paragraphs = self.extract_paragraphs(page, multicolumn, num_col_per_page)
+
+            for paragraph in paragraphs:
+                if paragraph.isspace() or len(paragraph) < 10:
+                    continue
+
+                chunks.extend(self.split_large_paragraphs(paragraph, max_chunk_size))
+
+        if save_chunks:
+            from datetime import datetime
+
+            folder_path = os.path.join(self.raw_training_path, 'chunks', 'results')
+            if not os.path.exists(folder_path):
+                os.makedirs(folder_path)
+
+            file_path = os.path.join(folder_path, f"{str(datetime.now())}.txt")
+            with open(file_path, 'w+') as file:
+                for chunk in chunks:
+                    file.write('\n\n\n\n-------- CHUNK --------\n\n\n\n')
+                    file.write(chunk)
+
+        return chunks
     
     def list_raw_training_files(self):
         return os.listdir(os.path.join('.', 'data', 'training_raw'))
@@ -92,23 +166,23 @@ class DataManager:
     def split_page_by_paragraph(self, page):
         return page.extract_text().split('\n')
 
-    def extract_paragraphs(self, page, multicolumn = False):
+    def extract_paragraphs(self, page: Page, multicolumn = False, num_col_per_page: int = 1):
         if not multicolumn:
             text = page.extract_text(layout=True)
-            text = ' '.join(text.split(' '))
             paragraphs = text.split('\n\n')
             return paragraphs
 
         else:
-            left = page.crop((0, 0, 0.5 * page.width, page.height))
-            right = page.crop((0.5 * page.width, 0, page.width, page.height))
+            # Determine the factor to multiple dimensions by to read multi-column pdf
+            split_factor = float(1 / num_col_per_page)
+
+            left = page.crop((0, 0, split_factor * page.width, page.height))
+            right = page.crop((split_factor * page.width, 0, page.width, page.height))
 
             left_text = left.extract_text(layout=True)
-            left_text = ' '.join(left_text.split(' '))
             left_text = self.get_printable_chars(left_text)
 
             right_text = right.extract_text(layout=True)
-            right_text = ' '.join(right_text.split(' '))
             right_text = self.get_printable_chars(right_text)
 
             left_paragraphs = left_text.split('\n\n')
@@ -116,31 +190,28 @@ class DataManager:
 
             return left_paragraphs + right_paragraphs
 
-    def split_large_paragraphs(self, paragraph, prefix_length, suffix_length, size_limit = 2095):
+    def split_large_paragraphs(self, paragraph, size_limit):
         if len(paragraph) > size_limit:
-            prompt_length = prefix_length + len(paragraph) + suffix_length + 1
+            substrings = []
+            lines = paragraph.split('\n')
+            current_substring = ''
 
-            if prompt_length >= size_limit:
-                substrings = []
-                lines = paragraph.split('\n')
-                current_substring = ''
+            for line in lines:
+                if line.isspace():
+                    continue
 
-                for line in lines:
-                    if len(current_substring) \
-                    + len(line) \
-                    + prefix_length \
-                    + suffix_length \
-                    + 1 <= size_limit:
-                        if line == '\n':
-                            continue
-                        current_substring += '\n' + line
-                    
-                    else:
-                        substrings.append(current_substring)
-                        current_substring = ''
-                substrings.append(current_substring)
+                if len(current_substring) \
+                + len(line) \
+                + 1 <= size_limit:
+                    current_substring += '\n' + line
+                
+                else:
+                    substrings.append(current_substring)
+                    current_substring = ''
 
-                return substrings
+            substrings.append(current_substring)
+
+            return substrings
 
         else:
             return [paragraph]

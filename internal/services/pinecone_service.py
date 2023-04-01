@@ -1,18 +1,22 @@
-import pinecone
-
-import os
 from dotenv import load_dotenv
 load_dotenv()
 
-import pydantic
-import typing
-
-from uuid import uuid4
-
+import os
 import itertools
 
-from .dynamodb_service import DynamoDBService, ItemCrudResponse, Key
+from io import BytesIO
 
+import pydantic
+import typing
+from uuid import uuid4
+
+import pinecone
+
+from data.data_manager import DataManager, PDFFile
+
+from .openai_service import OpenAIClient
+
+from .dynamodb_service import DynamoDBService, ItemCrudResponse, Key
 
 class MetaDataConfig(pydantic.BaseModel):
     indexed: typing.List[str]
@@ -81,10 +85,12 @@ class PineconeService:
         self.pine_cone_environment = os.getenv('PINECONE_ENVIRONMENT')
         self.pine_cone_index_name = os.getenv('PINECONE_INDEX_NAME')
 
-        pinecone.init(api_key=self.pine_cone_api_key,
-                      environment=self.pine_cone_environment)
+        pinecone.init(api_key=self.pine_cone_api_key, environment=self.pine_cone_environment)
+        
+        self.data_manager = DataManager()
         
         self.dynamodb_service = DynamoDBService('pinecone-index')
+        self.openai_service = OpenAIClient()
 
     @staticmethod
     def create_index(name: str, dimension: int, metadata_config=MetaDataConfig):
@@ -117,6 +123,15 @@ class PineconeService:
             return get_response
         
         return self.dynamodb_service.update_item(index)
+    
+    def consume_pdf(self, pdf_file_name: str, pdf_file_bytes: BytesIO):
+        pdf_file = DataManager.generate_pdf_file_from_name_bytes(
+            pdf_file_name,
+            pdf_file_bytes
+        )
+
+        paragraphs = self.data_manager.chunk_pdf(pdf_file, save_chunks=True)
+        return paragraphs
 
     @staticmethod
     def delete_index(name: str):

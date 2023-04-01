@@ -1,10 +1,16 @@
-from ..services.pinecone_service import PineconeService, PineConeItem
-
-from data.pinecone.pinecone_index import PineConeIndex
-
+import typing
 from uuid import uuid4
 
-import typing
+from fastapi import UploadFile
+
+from data.pinecone.pinecone_index import PineConeIndex
+from data.files.pdf import PDFFile, PDFFIleConfig
+
+from ..services.pinecone_service import PineconeService, PineConeItem, ItemCrudResponse
+
+
+
+
 
 class PineConeHandler:
     def __init__(self) -> None:
@@ -44,6 +50,30 @@ class PineConeHandler:
 
     def delete_index_from_db(self, item_id: str):
         return self.pinecone_service.delete_index_from_db(item_id)
+    
+    async def handle_consume_pdf(self, file: UploadFile):
+        # Extract file_name and verify it is a pdf document
+        file_name = file.filename
+
+        if file_name[-3:].lower() != 'pdf':
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=Exception(message='Invalid suffix for what is supposed to be PDF file')
+            )
+        file_contents = PDFFile.bytes_to_bytes_io(await file.read())
+
+        print(file_contents)
+        self.pinecone_service.consume_pdf(
+            file_name,
+            file_contents
+        )
+
+        return ItemCrudResponse(
+            Item={},
+            success=True,
+            exception=None
+        )
     
 if __name__ == '__main__':
     pc_handler = PineConeHandler()
