@@ -12,10 +12,9 @@ class PDFFIleConfig(BaseModel):
         arbitrary_types_allowed = True
 
     multicolumn: bool
-    num_col_per_page: int
 
     @staticmethod
-    def pdf_file_config_from_file_name(file_name: str):
+    def pdf_file_config(multicolumn):
         """Generate PDF Config File from pdf file naming convention
 
         MULTICOLUMN in file_name?
@@ -33,22 +32,8 @@ class PDFFIleConfig(BaseModel):
             FileConfig: Configuration for PDF file
         """
 
-        file_name_lower = file_name.lower()
-
-        multi_column = False
-
-        num_col_per_page = 1
-        num_col_pattern = re.compile(r'num_col_per_page_(\d+)')
-
-        if 'multicolumn' in file_name_lower:
-            multi_column = True
-
-        if 'num_col_per_page' in file_name_lower:
-            num_col_per_page = re.findall(pattern=num_col_pattern, string=file_name_lower)
-
         return PDFFIleConfig(
-            multicolumn=multi_column,
-            num_col_per_page=num_col_per_page
+            multicolumn=multicolumn
         )
 
 class PDFFile(BaseModel):
@@ -64,7 +49,7 @@ class PDFFile(BaseModel):
 
     # PDF Document after it has been read into doc by pdfplumber
     # SEE: DataManger.add_doc_to_pdf_file()
-    pdf_doc: Optional[PDF]
+    pdf_doc: Optional[Any]
 
     @staticmethod
     def bytes_to_bytes_io(file_bytes: bytes):

@@ -7,9 +7,22 @@ from typing import Callable, Tuple, List
 
 from io import BytesIO
 
+import fitz
+
 import pdfplumber
 from pdfplumber.pdf import PDF
 from pdfplumber.page import Page
+
+from pypdf import PdfReader
+
+from langchain.document_loaders import UnstructuredPDFLoader, OnlinePDFLoader, PyPDFLoader
+from langchain.text_splitter import RecursiveCharacterTextSplitter
+
+from langchain.docstore.document import Document
+
+from pydantic import BaseModel
+
+import fitz
 
 from .files.pdf import PDFFile, PDFFIleConfig
 
@@ -19,13 +32,19 @@ class DataItem:
         self.index = index
         self.text = text
 
+class ChunkObject(BaseModel):
+    FileName: str
+    Text: str
+    Page: int
+    Paragraph: int
+
 class DataManager:
     def __init__(self) -> None:
         self.raw_training_path = os.path.join('.', 'data', 'training_raw')
 
     @staticmethod
-    def generate_pdf_file_from_name_bytes(file_name: str, file_bytes: BytesIO):
-        pdf_file_config = PDFFIleConfig.pdf_file_config_from_file_name(file_name)
+    def generate_pdf_file_from_name_bytes(file_name: str, file_bytes: BytesIO, multicolumn=False):
+        pdf_file_config = PDFFIleConfig.pdf_file_config(multicolumn)
 
         pdf_file = PDFFile(
             file_name=file_name,
@@ -33,20 +52,81 @@ class DataManager:
             pdf_file_config=pdf_file_config
         )
 
-        return DataManager.add_doc_to_pdf_file(pdf_file)
+        return DataManager.add_doc_to_pdf_file(pdf_file, multicolumn=multicolumn)
 
     @staticmethod
-    def add_doc_to_pdf_file(pdf_file: PDFFile) -> PDF:
+    def add_doc_to_pdf_file(pdf_file: PDFFile, multicolumn=False) -> PDF:
         contents = pdf_file.contents
 
         try:
-            pdf_file.pdf_doc = pdfplumber.open(contents)
-            return pdf_file
+            if not multicolumn:            
+                pdf_file.pdf_doc = PdfReader(contents)
 
+            else:
+                pdf_file.pdf_doc = fitz.open(stream=pdf_file.contents)
+
+            return pdf_file
+            
         except Exception as e:
             raise e
         
-    def chunk_pdf(self, pdf_file: PDFFile, by_paragraph=True, max_chunk_size=1500, save_chunks=False) -> dict:
+    def chunk_pdf_langchain(self, file_path):
+        file_path = os.path.join(self.raw_training_path, '2014_oxford_diagnostic_handbook.pdf')
+        loader = PyPDFLoader(file_path=file_path)
+
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+        data = loader.load_and_split(text_splitter)
+
+        from datetime import datetime
+
+        file_name=str(datetime.now())
+        folder_path = os.path.join(self.raw_training_path, 'chunks', 'results', 'langchain')
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        file_path = os.path.join(folder_path, file_name)
+
+        page_paragraph_count = {}
+        chunk_objects = []
+        for doc in data:
+            metadata = doc.metadata
+
+            source = metadata['source']
+            page = metadata['page']
+
+            paragraph_count = page_paragraph_count.get(page, None)
+            if paragraph_count is None:
+                page_paragraph_count[page] = 1
+                paragraph_count = 1
+            else:
+                page_paragraph_count[page] += 1
+
+            file_name = re.findall('/(\w+).pdf', source)[0]
+            text = doc.page_content
+
+            chunk_objects.append(
+                ChunkObject(
+                    FileName=file_name,
+                    Text=text,
+                    Page=page,
+                    Paragraph=paragraph_count
+                )
+            )
+
+        # chunks = []
+        # for split in split_text:
+        #     content = split.page_content.replace('\n', ' ')
+        #     content = self.get_printable_chars(content)
+        #     chunks.append(content)
+
+        with open(file_path, 'w+') as file:
+            for chunk in chunk_objects:
+                file.write(chunk['Text'])
+                file.write('\n\n---------------- \n\n')
+
+        return chunk_objects
+        
+    def chunk_pdf(self, pdf_file: PDFFile, save_chunks=True) -> List[ChunkObject]:
         """Chunk the contents of a PDFFile object
 
         Args:
@@ -61,53 +141,84 @@ class DataManager:
             parse_results (dict): A dictionary containing the results from chunking the pdf in the following format:
                 (page_number: int, paragraph_number: int): chunked_text: str
         """
-        pdf_file_config = pdf_file.pdf_file_config
-
         pdf_doc = pdf_file.pdf_doc
         if pdf_doc is None:
             raise ValueError("PDF Doc must be set before chunking")
         
-        multicolumn = pdf_file_config.multicolumn
-        num_col_per_page = pdf_file_config.num_col_per_page
+        multicolumn = pdf_file.pdf_file_config.multicolumn
 
-        parse_results = {}
-        chunks = []
-        for page_number, page in enumerate(pdf_doc.pages):
-            paragraphs = self.extract_paragraphs(page, multicolumn, num_col_per_page)
+        docs = []
+        if not multicolumn:
+            docs = [
+                Document(
+                    page_content=page.extract_text(),
+                    metadata={'source': pdf_file.file_name, "page": i}
+                )
+                for i, page in enumerate(pdf_doc.pages)
+            ]
 
-            for paragraph_number, paragraph in enumerate(paragraphs):
-                # Replace multiple white spaces with single white space
-                # paragraph = re.sub(r'\n\n+', r'\n', paragraph)
-                # paragraph = re.sub(r'\s\s+', r' ', paragraph)
-                paragraph = self.get_printable_chars(paragraph)
+        else:
+            docs = self.get_multicolumn_docs(pdf_file)
+        
+        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+        data = text_splitter.split_documents(docs)
 
-                if paragraph.isspace() or len(paragraph) < 10:
-                    continue
+        page_paragraph_count = {}
+        chunk_objects = []
+        for doc in data:
+            metadata = doc.metadata
 
-                subparagraphs, num_paragraphs = self.split_large_paragraphs(paragraph, max_chunk_size)
-                chunks.extend(subparagraphs)
+            page = metadata['page']
 
-                if num_paragraphs == 0:
-                    continue
+            paragraph_count = page_paragraph_count.get(page, None)
+            if paragraph_count is None:
+                page_paragraph_count[page] = 1
+                paragraph_count = 1
+            else:
+                page_paragraph_count[page] += 1
 
-                for num_paragraph in range(num_paragraphs):
-                    parse_results[(page_number, num_paragraph)] = subparagraphs[num_paragraph]
+            file_name = pdf_file.file_name
+            text = doc.page_content
 
-        if save_chunks:
-            from datetime import datetime
+            text = self.get_printable_chars(text)
 
-            file_name = pdf_file.file_name[:-3]
-            folder_path = os.path.join(self.raw_training_path, 'chunks', 'results', file_name)
-            if not os.path.exists(folder_path):
-                os.makedirs(folder_path)
+            chunk_objects.append(
+                ChunkObject(
+                    FileName=file_name,
+                    Text=text,
+                    Page=page,
+                    Paragraph=paragraph_count
+                )
+            )
 
-            file_path = os.path.join(folder_path, f"{str(datetime.now())}.txt")
-            with open(file_path, 'w+') as file:
-                for (page_number, paragraph_number), chunk in parse_results.items():
-                    file.write(f'\n\n\n\n-------- PageNumber: {page_number}, ParagraphNumber: {paragraph_number} --------\n\n\n\n')
-                    file.write(chunk)
+        from datetime import datetime
 
-        return parse_results, chunks
+        file_name = pdf_file.file_name[:-3]
+        folder_path = os.path.join(self.raw_training_path, 'chunks', 'results', file_name)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+
+        file_path = os.path.join(folder_path, f"{str(datetime.now())}_file_name")
+        with open(file_path, 'w+') as file:
+            for chunk in chunk_objects:
+                file.write(chunk.Text)
+                file.write('\n\n---------------- \n\n')
+
+        return chunk_objects
+    
+    def get_multicolumn_docs(self, pdf_file: PDFFile) -> List[Document]:
+        doc = pdf_file.pdf_doc
+
+        documents = []
+        for page_number, page in enumerate(doc):
+            documents.append(
+                Document(
+                    page_content=page.get_text(),
+                    metadata={ 'source': pdf_file.file_name, 'page': page_number }
+                )
+            )
+
+        return documents
     
     def list_raw_training_files(self):
         return os.listdir(os.path.join('.', 'data', 'training_raw'))

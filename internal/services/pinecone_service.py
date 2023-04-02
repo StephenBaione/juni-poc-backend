@@ -12,7 +12,7 @@ from uuid import uuid4
 
 import pinecone
 
-from data.data_manager import DataManager, PDFFile
+from data.data_manager import DataManager, PDFFile, ChunkObject
 
 from .openai_service import OpenAIClient
 
@@ -35,10 +35,17 @@ class PineConeNameSpaces(Enum):
 class PineConeIndexes(Enum):
     MEDICAL_DOCS = 'medical-documents'
 
+class PineconeQueryItem(pydantic.BaseModel):
+    id: str
+    score: typing.Any
+    values: typing.Any
+    metadata: typing.Any
+
 class MedicalMetaData(pydantic.BaseModel):
     Filename: str
     PageNumber: int
     ParagraphNumber: int
+    PlainText: str
 
 class PineConeItem(pydantic.BaseModel):
     id: str
@@ -110,6 +117,27 @@ class PineconeService:
         return pinecone.create_index(name=name, dimension=dimension,
                               metadata_config=metadata_config)
     
+    @staticmethod
+    def delete_all_items_in_namespace(index_name: str, namespace: str) -> ItemCrudResponse:
+        try:
+            index = PineconeService.load_index(index_name)
+            index.delete(delete_all=True, namespace=namespace)
+
+            return ItemCrudResponse(
+                Item={},
+                success=True,
+                exception=e
+            )
+
+        except Exception as e:
+            print(e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
+    
     def get_index(self, index_id: str):
         return self.dynamodb_service.get_item(index_id)
     
@@ -137,41 +165,52 @@ class PineconeService:
         
         return self.dynamodb_service.update_item(index)
     
-    def consume_pdf(self, pdf_file_name: str, pdf_file_bytes: BytesIO):
+    def consume_pdf(self, pdf_file_name: str, pdf_file_bytes: BytesIO, multicolumn=False):
         pdf_file = DataManager.generate_pdf_file_from_name_bytes(
             pdf_file_name,
-            pdf_file_bytes
+            pdf_file_bytes,
+            multicolumn=multicolumn
         )
 
-        parse_results, chunks = self.data_manager.chunk_pdf(pdf_file, save_chunks=True)
-        return self.create_medical_doc_indexes(pdf_file_name, parse_results, chunks)
+        chunk_objects = self.data_manager.chunk_pdf(pdf_file, save_chunks=True)
+        return self.create_medical_doc_indexes(pdf_file_name, chunk_objects)
 
-    def create_medical_doc_indexes(self, pdf_file_name, parse_results: dict, chunks: list):
+    def create_medical_doc_indexes(self, pdf_file_name, chunk_objects: typing.List[ChunkObject]):
         name_space = PineConeNameSpaces.MEDICAL_DOCS.value
 
         pinecone_items = []
         openai_service = self.openai_service
-
-        on_chunk = lambda chunk_batch: openai_service.get_embeddings_batch_with_retry(chunk_batch)
         
         embeddings_unpacked = []
-        embeddings = PineconeService.upsert_chunk_generator(
-            chunks, 100, on_chunk=on_chunk
-        )
+        for index in range(0, len(chunk_objects), 100):
+            chunk_batch = []
+            if index + 100 > len(chunk_objects):
+                chunk_batch.extend(chunk_objects[index:])
+            else:
+                chunk_batch.extend(chunk_objects[index: index + 100])
 
-        for embedding in embeddings:
-            embeddings_unpacked.extend(embedding)
+            chunk_text = [chunk_object.Text for chunk_object in chunk_batch]
+            embeddings = openai_service.get_embeddings_batch_with_retry(chunk_text)
+            embeddings_unpacked.extend(embeddings)
         
         # Create pinecone items, whose embedding will be filled in later
-        item_count = 0
-        for (page_number, paragraph_number), chunk in parse_results.items():
+        for index, chunk_object in enumerate(chunk_objects):
+            page_number = chunk_object.Page
+            paragraph_number = chunk_object.Paragraph
+            plain_text = chunk_object.Text
+
             # Define metadata for index
-            metadata = MedicalMetaData(Filename=pdf_file_name, PageNumber=page_number, ParagraphNumber=paragraph_number)
+            metadata = MedicalMetaData(
+                Filename=pdf_file_name, 
+                PageNumber=page_number, 
+                ParagraphNumber=paragraph_number,
+                PlainText=plain_text
+            )
             
             # Collect default values for pinecone_items
             pinecone_items.append(
                 PineConeItem(**{
-                    'vector': embeddings_unpacked[item_count],
+                    'vector': embeddings_unpacked[index],
                     'metadata': dict(metadata),
                     'namespace': name_space
                 })
@@ -185,28 +224,54 @@ class PineconeService:
 
         return ItemCrudResponse(
             Item={
-                'item_count': item_count,
+                'item_count': len(chunk_objects),
                 'file_name': pdf_file_name
             },
             success=True,
             exception=None
         )
 
-    def plain_text_query(self, index_name, namespace, plain_text, top_k=5):
-        # Load pinecone index
-        index = PineconeService.load_index(index_name)
+    def plain_text_query(self, index_name, namespace, plain_text, top_k=5) -> ItemCrudResponse:
+        try:
+            # Load pinecone index
+            index = PineconeService.load_index(index_name)
+            
+            # Get embeddings from text
+            text_embeddings = self.openai_service.get_embeddings(plain_text)
+
+            # Query pinecone database in namespace, for semantic similarity
+            matches = index.query(
+                vector=text_embeddings,
+                namespace=namespace,
+                top_k=top_k,
+                include_metadata=True
+            )['matches']
+
+            items = []
+            for match in matches:
+                items.append(
+                    PineconeQueryItem(
+                        id=match['id'],
+                        score=match['score'],
+                        values=match['values'],
+                        metadata=match['metadata']
+                    )   
+                )
+
+            return ItemCrudResponse(
+                Item=items,
+                success=True,
+                exception=None
+            )
         
-        # Get embeddings from text
-        text_embeddings = self.openai_service.get_embeddings(plain_text)
+        except Exception as e:
+            print(e)
 
-        # Query pinecone database in namespace, for semantic similarity
-        top_k_vectors = index.query(
-            vector=text_embeddings,
-            namespace=namespace,
-            top_k=5
-        )
-
-        return top_k_vectors
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
     @staticmethod
     def delete_index(name: str):

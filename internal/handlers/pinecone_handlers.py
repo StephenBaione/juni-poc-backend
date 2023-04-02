@@ -51,7 +51,7 @@ class PineConeHandler:
     def delete_index_from_db(self, item_id: str):
         return self.pinecone_service.delete_index_from_db(item_id)
     
-    async def handle_consume_pdf(self, file: UploadFile):
+    async def handle_consume_pdf(self, file: UploadFile, multicolumn=False):
         # Extract file_name and verify it is a pdf document
         file_name = file.filename
 
@@ -61,12 +61,13 @@ class PineConeHandler:
                 success=False,
                 exception=Exception(message='Invalid suffix for what is supposed to be PDF file')
             )
+
         file_contents = PDFFile.bytes_to_bytes_io(await file.read())
 
-        print(file_contents)
         self.pinecone_service.consume_pdf(
             file_name,
-            file_contents
+            file_contents,
+            multicolumn=multicolumn
         )
 
         return ItemCrudResponse(
@@ -74,6 +75,16 @@ class PineConeHandler:
             success=True,
             exception=None
         )
+    
+    def plain_text_search(self, index_name: str, namespace: str, plain_text: str):
+        return self.pinecone_service.plain_text_query(
+            index_name=index_name,
+            namespace=namespace,
+            plain_text=plain_text
+        )
+    
+    def delete_all_in_namespace(self, index_name: str, namespace: str) -> ItemCrudResponse:
+        return PineconeService.delete_all_items_in_namespace(index_name, namespace)
     
 if __name__ == '__main__':
     pc_handler = PineConeHandler()
