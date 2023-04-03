@@ -9,3 +9,5 @@ creds/*.json
 .env
 *.jsonl
 temp/
+
+training_raw/
