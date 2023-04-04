@@ -57,3 +57,8 @@ class UserService:
         user['confirmed'] = True
 
         return self.dynamodb_service.update_item(user)
+
+    def get_user_by_username(self, username):
+        query_key = Key('username').eq(username)
+
+        return self.dynamodb_service.scan_table(query_key, limit=1)

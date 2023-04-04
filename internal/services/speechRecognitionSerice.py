@@ -1,6 +1,5 @@
 from __future__ import division
 
-import re
 import sys
 import os
 
@@ -8,8 +7,6 @@ import asyncio
 import threading
 
 from google.cloud import speech
-
-from six.moves import queue
 
 from internal.clients.web_socket_client import WebSocketClient
 

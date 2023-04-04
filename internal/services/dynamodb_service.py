@@ -4,7 +4,7 @@ from boto3.dynamodb.conditions import Key
 
 import pydantic
 
-from typing import Optional, Any, List, Union
+from typing import Optional, Any, List, Union, Dict, Tuple
 
 class ItemCrudResponse(pydantic.BaseModel):
     Item: Union[dict, List]
@@ -36,19 +36,46 @@ class DynamoDBService:
     def set_dynamodb_resource():
         DynamoDBService._dynamodb_resource = DynamoDBService._boto3_service.get_resource(ResourceClients.DYNAMODB)
 
-    def get_item(self, item_id: str) -> ItemCrudResponse:
+    @staticmethod
+    def generate_projection_expression(reserved_keywords: Dict[str, str], field_names) -> Tuple[str, Dict]:
+        projection_expression = ''
+        expression_attribute_names = {}
+        
+        for field, reserved_keyword in reserved_keywords.items():
+            if projection_expression == '':
+                projection_expression += reserved_keyword
+            else:
+                projection_expression += ', ' + reserved_keyword
+            
+            expression_attribute_names[reserved_keyword] = field
+
+        for field_name in field_names:
+            if projection_expression == '':
+                projection_expression += field_name
+            else:
+                projection_expression += ', ' + field_name
+
+        return projection_expression, expression_attribute_names
+
+    def get_item(self, item_id: str, id_keys = None) -> ItemCrudResponse:
         if DynamoDBService._dynamodb_client is None:
             self.set_dynamodb_client()
         
         try:
-            result = self.table.get_item(
-                Key={ 'id': item_id }
-            )
+            if id_keys is not None:
+                result = self.table.get_item(
+                    Key=id_keys
+                )
+
+            else:
+                result = self.table.get_item(
+                    Key={ 'id': item_id }
+                )
 
             if 'Item' in result:
-                return ItemCrudResponse(Item=result['Item'], success=True)
+                return ItemCrudResponse(Item=result['Item'], success=True, exception=None)
             
-            return ItemCrudResponse(Item={}, success=True)
+            return ItemCrudResponse(Item={}, success=True, exception=None)
         
         except Exception as e:
             return ItemCrudResponse(Item={}, success=False, exception=e)
@@ -60,7 +87,7 @@ class DynamoDBService:
             return ItemCrudResponse(
                 Item=query['Items'],
                 success=True,
-                exception=e
+                exception=None
             )
 
         except Exception as e:
@@ -72,18 +99,29 @@ class DynamoDBService:
                 exception=e
             )
         
-    def scan_table(self, filter_expression, limit=None):
+    def scan_table(self, filter_expression, limit=None, projection_expression=None, expression_attribute_names=None):
         try:
             results = []
 
-            scan_args = {
-                'FilterExpression': filter_expression
-            }
+            scan_args = {}
+
+            if filter_expression is not None:
+                scan_args['FilterExpression'] = filter_expression
+
+            if projection_expression is not None:
+                scan_args['ProjectionExpression'] = projection_expression
+            
+            if expression_attribute_names is not None and expression_attribute_names != {}:
+                scan_args['ExpressionAttributeNames'] = expression_attribute_names
 
             stop = False
             last_evaluated_key = None
             while not stop:
-                response = self.table.scan(**scan_args)
+                if scan_args != {}:
+                    response = self.table.scan(**scan_args)
+                else:
+                    response = self.table.scan()
+
                 items = response.get('Items', [])
 
                 if limit is not None:
@@ -133,11 +171,17 @@ class DynamoDBService:
                 exception=e
             )
         
-    def delete_item(self, item_id) -> ItemCrudResponse:
+    def delete_item(self, item_id, item_key: dict = None) -> ItemCrudResponse:
         try:
-            self.table.delete_item(
-                Key={'id': item_id}
-            )
+            if item_key is not None:
+                self.table.delete_item(
+                    Key=item_key
+                )
+
+            else:
+                self.table.delete_item(
+                    Key={'id': item_id}
+                )
 
             return ItemCrudResponse(
                 Item={},

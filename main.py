@@ -10,6 +10,10 @@ from routes.call_routes import call_router
 from routes.azure_speech_routes import azure_speech_router
 from routes.pinecone_routes import pinecone_router
 from routes.user_routes import user_router
+from routes.template_routes import template_router
+from routes.agent_routes import agent_router
+from routes.conversation_routes import conversation_router
+from routes.chat_routes import chat_router
 
 from internal.services.text_to_speech_service import TextToSpeechService
 
@@ -51,6 +55,10 @@ app.include_router(call_router)
 app.include_router(azure_speech_router)
 app.include_router(pinecone_router)
 app.include_router(user_router)
+app.include_router(template_router)
+app.include_router(agent_router)
+app.include_router(conversation_router)
+app.include_router(chat_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',

@@ -16,6 +16,10 @@ async def get_user(user_id: str):
 async def get_user_by_email(email: str):
     return user_handler.handle_get_user_by_email(email)
 
+@user_router.get('/by_username/{username}')
+async def handle_get_user_by_username(username: str):
+    return user_handler.handle_get_user_by_username(username)
+
 @user_router.post('/create')
 async def create_user(user: User = Body(...)):
     return user_handler.handle_create_user(user)
