@@ -4,7 +4,7 @@ import os
 import json
 import openai
 
-from internal.request_models.openai_requests import ChatMessage
+# from internal.request_models.openai_requests import ChatMessage
 
 import requests
 
@@ -14,13 +14,16 @@ import backoff
 
 from uuid import uuid4
 
-from ..request_models.openai_requests import ChatMessage
+# from ..request_models.openai_requests import ChatMessage
+from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
 from dotenv import load_dotenv
 
 import enum
 
 from datetime import datetime
+
+from typing import List
 
 class KnownModels(enum.Enum):
     GPT_3_5_TURBO = 'gpt-3.5-turbo'
@@ -219,27 +222,26 @@ class OpenAIClient:
             return None
 
     @staticmethod
-    def create_openai_chat_message(model, message):
-        chat_message_data = {}
-        chat_message_data['id'] = 'openai-' + str(uuid4())
-        chat_message_data['user'] = 'stephenbaione'
-        chat_message_data['sender'] = model
-        chat_message_data['message'] = message
-        chat_message_data['model'] = model
-        chat_message_data['created'] = ''
-        chat_message_data['updated'] = ''
-
-        return ChatMessage(**chat_message_data)
+    def create_openai_chat_message(message, prompt_message: ChatMessage) -> ChatMessage:
+        return ChatMessage(
+            role=ChatRoles.AI_ROLE.value,
+            user_id=prompt_message.user_id,
+            sender=prompt_message.agent_name,
+            conversation_id=prompt_message.conversation_id,
+            user=prompt_message.user,
+            agent_name=prompt_message.agent_name,
+            message=message
+        )
 
     @staticmethod
-    def decode_completion_to_chat_message(completion, model):
+    def decode_completion_to_chat_message(completion, prompt_message: ChatMessage):
         choices = completion['choices']
         if len(choices) == 0:
             return None
 
-        message = choices[0]['text']
+        message = choices[0]['message']['content']
         message = message.strip()
-        return OpenAIClient.create_openai_chat_message(model, message)
+        return OpenAIClient.create_openai_chat_message(message, prompt_message)
         
         
     def create_fine_tune(self, training_file, model="ada", **options):
@@ -335,6 +337,13 @@ class OpenAIClient:
         batch_text = [text.replace('\n', ' ') for text in batch_text]
         embeddings = openai.Embedding.create(input = batch_text, model=model)['data']
         return [embedding['embedding'] for embedding in embeddings]
+    
+    def get_chat_completion(self, messages: List[dict]):
+        return openai.ChatCompletion.create(
+            model='gpt-3.5-turbo',
+            temperature=0.2,
+            messages=messages
+        )
 
     @backoff.on_exception(backoff.expo, openai.error.RateLimitError)
     def get_embeddings_batch_with_retry(self, batch_text, model="text-embedding-ada-002", save = True):

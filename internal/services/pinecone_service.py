@@ -14,11 +14,15 @@ import pinecone
 
 from data.data_manager import DataManager, PDFFile, ChunkObject
 
+from data.models.conversation.chat_message import ChatMessage
+
 from .openai_service import OpenAIClient
 
 from .dynamodb_service import DynamoDBService, ItemCrudResponse, Key
 
 from enum import Enum
+
+from uuid import uuid4
 
 class MetaDataConfig(pydantic.BaseModel):
     indexed: typing.List[str]
@@ -31,9 +35,12 @@ class MetaDataFilter(pydantic.BaseModel):
 
 class PineConeNameSpaces(Enum):
     MEDICAL_DOCS = 'medical-docs'
+    CHAT_MESSAGE = 'chat-message'
 
 class PineConeIndexes(Enum):
+    # Sharing indexes for now, because money
     MEDICAL_DOCS = 'medical-documents'
+    CHAT_INDEX = 'medical-documents'
 
 class PineconeQueryItem(pydantic.BaseModel):
     id: str
@@ -41,11 +48,62 @@ class PineconeQueryItem(pydantic.BaseModel):
     values: typing.Any
     metadata: typing.Any
 
+class NameSpaces(Enum):
+    MEDICAL_NAME_SPACE = 'medical-docs'
+    CHAT_MESSAGE = 'chat-message'
+
 class MedicalMetaData(pydantic.BaseModel):
     Filename: str
     PageNumber: int
     ParagraphNumber: int
     PlainText: str
+
+class ChatMetaData(pydantic.BaseModel):
+    id: str
+
+    # Track who sent the message
+    sender: str
+
+    # Track the conversation involved
+    conversation_id: str
+
+    # Track the user that is involved
+    user: str
+    user_id: str
+
+    # Track the agent that is involved
+    agent_owner: str
+    agent_name: str
+
+    created_at: str
+
+class PineConeChatItem(pydantic.BaseModel):
+    id: str
+    vector: typing.List[float]
+    metadata: typing.Dict[str, typing.Any]
+    namespace: str
+
+    @staticmethod
+    def from_chat_message(chat_message: ChatMessage, embedding) -> "PineConeChatItem":
+        chat_metadata = ChatMetaData(
+            id=chat_message.id,
+            sender=chat_message.sender,
+            conversation_id=chat_message.conversation_id,
+            user=chat_message.user,
+            user_id=chat_message.user_id,
+            agent_owner=chat_message.user_id,
+            agent_name=chat_message.agent_name,
+            created_at=chat_message.created_at,
+        )
+
+        namespace = PineConeNameSpaces.CHAT_MESSAGE.value
+
+        return PineConeChatItem(
+            id=str(uuid4()),
+            vector=embedding,
+            metadata=dict(chat_metadata),
+            namespace=namespace
+        )
 
 class PineConeItem(pydantic.BaseModel):
     id: str
@@ -126,7 +184,7 @@ class PineconeService:
             return ItemCrudResponse(
                 Item={},
                 success=True,
-                exception=e
+                exception=None
             )
 
         except Exception as e:
@@ -278,8 +336,22 @@ class PineconeService:
         return pinecone.delete_index(name=name)
 
     @staticmethod
-    def list_indexes():
-        return pinecone.list_indexes()
+    def list_indexes() -> ItemCrudResponse:
+        try:
+            indexes = pinecone.list_indexes()
+            return ItemCrudResponse(
+                Item=indexes,
+                success=True,
+                exception=None
+            )
+        except Exception as e:
+            print(e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
     @staticmethod
     def describe_index(name: str):
@@ -298,12 +370,35 @@ class PineconeService:
         return index
 
     @staticmethod
-    def upsert_data(index_name, data: PineConeItem):
-        index = PineconeService.load_index(index_name)
-        return index.upsert(
-            PineconeService.upsert_tuple(data),
-            namespace=data.namespace
-        )
+    def upsert_data(index_name, data: PineConeItem) -> ItemCrudResponse:
+        try:
+            index = PineconeService.load_index(index_name)
+            result = index.upsert(
+                vectors=[PineConeItem.upsert_tuple(data)],
+                namespace=data.namespace
+            )
+
+            if result['upserted_count'] == 1:
+                return ItemCrudResponse(
+                    Item=dict(data),
+                    success=True,
+                    exception=None
+                )
+            
+            return ItemCrudResponse(
+                Item={},
+                success=True,
+                exception=None
+            )
+
+        except Exception as e:
+            print(e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
     @staticmethod
     def upsert_small_batch(index_name, data: typing.List[PineConeItem], namespace: str = 'default'):
@@ -421,4 +516,26 @@ class PineconeService:
             include_values=include_values,
             namespace=namespace
         )
+    
+    def get_all_namespaces_in_index(self, index_name: str) -> ItemCrudResponse:
+        try:
+            index = PineconeService.load_index(index_name)
+
+            stats = index.describe_index_stats()
+
+            namespaces = [namespace for namespace, _ in stats['namespaces'].items()]
+            return ItemCrudResponse(
+                Item=namespaces,
+                success=True,
+                e=None
+            )
+
+        except Exception as e:
+            print(e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
