@@ -23,4 +23,7 @@ class UserHandler:
     
     def handle_confirm_user(self, user_id):
         return self.user_service.confirm_user(user_id)
+    
+    def handle_get_user_by_username(self, username: str):
+        return self.user_service.get_user_by_username(username)
 

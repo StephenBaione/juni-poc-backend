@@ -8,10 +8,6 @@ from data.files.pdf import PDFFile, PDFFIleConfig
 
 from ..services.pinecone_service import PineconeService, PineConeItem, ItemCrudResponse
 
-
-
-
-
 class PineConeHandler:
     def __init__(self) -> None:
         self.pinecone_service = PineconeService()
@@ -32,6 +28,9 @@ class PineConeHandler:
 
     def get_index(self, index_id):
         return self.pinecone_service.get_index(index_id)
+    
+    def list_index(self):
+        return PineconeService.list_indexes()
     
     def get_index_by_name(self, index_name: str):
         return self.pinecone_service.get_index_by_name(index_name)
@@ -85,6 +84,9 @@ class PineConeHandler:
     
     def delete_all_in_namespace(self, index_name: str, namespace: str) -> ItemCrudResponse:
         return PineconeService.delete_all_items_in_namespace(index_name, namespace)
+    
+    def handle_get_all_namespaces_in_index(self, index_name: str) -> ItemCrudResponse:
+        return self.pinecone_service.get_all_namespaces_in_index(index_name)
     
 if __name__ == '__main__':
     pc_handler = PineConeHandler()
