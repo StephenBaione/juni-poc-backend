@@ -1,0 +1,35 @@
+{
+    "id": "v1",
+    "AvailableAgents": {
+        "ChatGPT": {
+            "Service": "openai",
+            "ServiceLabel": "OpenAI",
+            "Type": "chat_gpt",
+            "TypeLabel": "Chat GPT",
+            "InputType": "text",
+            "InputTypeLabel": "Text",
+            "OutputType": "text",
+            "OutputTypeLabel": "Text"
+        },
+        "PineconeService": {
+            "Service": "pinecone",
+            "ServiceLabel": "Pinecone",
+            "Type": "semantic_search",
+            "TypeLabel": "Semantic Search",
+            "InputType": "text",
+            "InputTypeLabel": "Text",
+            "OutputType": "text",
+            "OutputTypeLabel": "Text"
+        },
+        "PDFConsumer": {
+            "Service": "pinecone",
+            "ServiceLabel": "Pinecone",
+            "Type": "chunker",
+            "TypeLabel": "Chunker",
+            "InputType": "pdf",
+            "InputTypeLabel": "PDF",
+            "OutputType": "text",
+            "OutputTypeLabel": "Text"
+        }
+    }
+}
