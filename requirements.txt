@@ -3,3 +3,5 @@ fastapi
 google-cloud-speech
 azure-cognitiveservices-speech
 langchain
+pandas
+python-multipart
