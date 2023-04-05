@@ -12,6 +12,8 @@ from enum import Enum
 
 from ..item_id import ItemId
 
+from typing import List, Dict, Union
+
 class ChatRoles(Enum):
     SYSTEM_ROLE = 'system'
     AI_ROLE = 'assistant'
@@ -84,7 +86,6 @@ class ChatMessage(BaseModel):
 
             else:
                 raise ValueError('Invalid role to send to Openai')
-        
         return messages
     
     def as_template_message(self, chat_message) -> str:

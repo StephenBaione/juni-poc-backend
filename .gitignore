@@ -9,6 +9,9 @@ creds/*.json
 .env
 *.jsonl
 temp/
+.DS_Store
+.vscode/
+AWSCLIV2.pkg
 
 training_raw/
 
