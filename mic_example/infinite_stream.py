@@ -6,7 +6,6 @@ import os
 from google.cloud import speech
 from six.moves import queue
 
-import pyaudio
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), '..', 'creds',
@@ -45,18 +44,6 @@ class ResumableMicrophoneStream:
         self.bridging_offset = 0
         self.last_transcript_was_final = False
         self.new_stream = True
-        self._audio_interface = pyaudio.PyAudio()
-        self._audio_stream = self._audio_interface.open(
-            format=pyaudio.paInt16,
-            channels=self._num_channels,
-            rate=self._rate,
-            input=True,
-            frames_per_buffer=self.chunk_size,
-            # Run the audio stream asynchronously to fill the buffer object.
-            # This is necessary so that the input device's buffer doesn't
-            # overflow while the calling thread makes network requests, etc.
-            stream_callback=self._fill_buffer,
-        )
 
     def __enter__(self):
 
@@ -77,7 +64,6 @@ class ResumableMicrophoneStream:
         """Continuously collect data from the audio stream, into the buffer."""
 
         self._buff.put(in_data)
-        return None, pyaudio.paContinue
 
     def generator(self):
         """Stream Audio from microphone to API and to local buffer"""
