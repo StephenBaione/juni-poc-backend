@@ -11,3 +11,5 @@ creds/*.json
 temp/
 
 training_raw/
+
+.vscode
