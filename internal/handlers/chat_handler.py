@@ -1,6 +1,6 @@
 from ..services.openai_service import OpenAIClient
 from ..services.template_service import TemplateService
-efrom ..services.chat_service import ChatService
+from ..services.chat_service import ChatService
 
 from data.models.conversation.chat_message import ChatMessage
 
