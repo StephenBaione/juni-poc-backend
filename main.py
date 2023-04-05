@@ -14,6 +14,7 @@ from routes.template_routes import template_router
 from routes.agent_routes import agent_router
 from routes.conversation_routes import conversation_router
 from routes.chat_routes import chat_router
+from routes.flow_routes import flow_router
 
 from internal.services.text_to_speech_service import TextToSpeechService
 
@@ -59,6 +60,7 @@ app.include_router(template_router)
 app.include_router(agent_router)
 app.include_router(conversation_router)
 app.include_router(chat_router)
+app.include_router(flow_router)
 
 os.environ['GOOGLE_APPLICATION_CREDENTIALS'] = \
     os.path.join(os.path.dirname(__file__), 'creds',

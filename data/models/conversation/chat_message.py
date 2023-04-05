@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Optional, Union, List, Dict
 
 from pydantic import BaseModel
 
@@ -86,7 +86,6 @@ class ChatMessage(BaseModel):
 
             else:
                 raise ValueError('Invalid role to send to Openai')
-
         return messages
     
     def as_template_message(self, chat_message) -> str:

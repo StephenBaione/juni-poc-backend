@@ -14,3 +14,5 @@ temp/
 AWSCLIV2.pkg
 
 training_raw/
+
+.vscode

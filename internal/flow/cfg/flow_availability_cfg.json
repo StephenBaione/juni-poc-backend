@@ -1,0 +1,25 @@
+{
+    "version": "v1",
+    "AvailableInputs": {
+        "ChatInput": {
+            "InputType": "chat",
+            "InputTypeLabel": "Chat",
+            "OutputType": "chat",
+            "OutputTypeLabel": "Chat",
+            "SupportedAgents": [
+                "Chat GPT"
+            ]
+        }
+    },
+    "AvailableOutputs": {
+        "ChatOutput": {
+            "InputType": "chat",
+            "InputTypeLabel": "Chat",
+            "OutputType": "chat",
+            "OutputTypeLabel": "Chat",
+            "SupportedAgents": [
+                "Chat GPT"
+            ]
+        }
+    }
+}
