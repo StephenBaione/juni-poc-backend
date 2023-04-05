@@ -12,6 +12,8 @@ from enum import Enum
 
 from ..item_id import ItemId
 
+from typing import List, Dict, Union
+
 class ChatRoles(Enum):
     SYSTEM_ROLE = 'system'
     AI_ROLE = 'assistant'
@@ -59,6 +61,33 @@ class ChatMessage(BaseModel):
         chat_message.updated_at = updated_at
 
         return chat_message
+    
+    @staticmethod
+    def as_openai_input(chat_messages: Union["ChatMessage", List["ChatMessage"]]) -> List[Dict]:
+        if type(chat_messages) != list:
+            chat_messages = [chat_messages]
+
+        messages = []
+        for chat_message in chat_messages:
+            if chat_message.role == ChatRoles.AI_ROLE.value:
+                messages.append(
+                    { 'role': chat_message.role, 'content': chat_message.message }
+                )
+
+            elif chat_message.role == ChatRoles.SYSTEM_ROLE.value:
+                messages.append(
+                    { 'role': chat_message.role, 'content': chat_message.message }
+                )
+
+            elif chat_message.role == ChatRoles.USER_ROLE.value:
+                messages.append(
+                    { 'role': chat_message.role, 'content': chat_message.message }
+                )
+
+            else:
+                raise ValueError('Invalid role to send to Openai')
+
+        return messages
     
     def as_template_message(self, chat_message) -> str:
         pass
