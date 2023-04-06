@@ -9,6 +9,7 @@ from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
 from ..agents.gpt_agent import GPTAgent
 from ..agents.knowledge_agent import KnowledgeAgent
+from ..agents.history_agent import HistoryAgent
 
 from typing import List
 
@@ -38,11 +39,14 @@ class FlowRunner:
 
         self.gpt_agent = GPTAgent(None, self.chat_output)
         self.knowledge_agent = KnowledgeAgent(None, self.gpt_agent, 'medical-documents', 'medical-docs')
+        
         # Add a history agent,
         # Set arbitrary max token size,
         # Run a scan in dynamodb for chat message in conversation
+        self.history_agent = HistoryAgent(None, self.knowledge_agent)
 
-        self.chat_input = ChatInput(self.knowledge_agent)
+        #self.chat_input = ChatInput(self.knowledge_agent)
+        self.chat_input = ChatInput(self.history_agent)
 
     def execute(self):
         chat_message = ChatMessage(
