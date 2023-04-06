@@ -180,4 +180,9 @@ async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
         return {'error': str(e)}
 
 if __name__ == '__main__':
-    uvicorn.run('main:app', host='localhost', port=8001, reload=True)
+    from internal.flow.flows.flow_builder import FlowRunner
+
+    # uvicorn.run('main:app', host='localhost', port=8001, reload=True)
+    flow_runner = FlowRunner()
+    flow_runner.execute()
+

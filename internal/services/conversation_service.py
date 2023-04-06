@@ -72,7 +72,7 @@ class ConversationService:
         return self.dynamodb_service.get_item(None, id_keys=id_keys)
     
     def list_chat_messages(self, conversation_id: str):
-        query_filter = Key('conversation_id').eq(conversation_id)
+        query_filter = Key('conversation_id').eq(conversation_id) # & Key('field').eq(value)
 
         return self.chat_dynamodb_service.scan_table(query_filter)
     

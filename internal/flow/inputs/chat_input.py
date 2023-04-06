@@ -13,6 +13,7 @@ class ChatInput:
         self.consumer = consumer
 
     def consume_input(self, chat_message: ChatMessage):
-        self.consumer.consume([chat_message])
+        response_dict = {}
+        return self.consumer.consume(chat_message, response_dict)
 
 

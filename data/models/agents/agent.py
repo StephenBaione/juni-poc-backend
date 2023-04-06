@@ -61,6 +61,10 @@ class AgentSupportedService(BaseModel):
 
         return agent
 
+class AgentInputTypes(Enum):
+    CHAT_MESSAGE: str
+    CHAT_LIST: str
+
 class Agent(BaseModel):
     id: Optional[str] = None
     name: str
