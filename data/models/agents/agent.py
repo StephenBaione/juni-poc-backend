@@ -81,6 +81,21 @@ class Agent(BaseModel):
     updated_at: Optional[str]
 
     @staticmethod
+    def from_json(agent_data) -> "Agent":
+        return Agent(
+            id = agent_data.get('id', None),
+            name = agent_data['name'],
+            service=agent_data['service'],
+            type=agent_data['type'],
+            input_type=agent_data['input_type'],
+            output_type=agent_data['output_type'],
+            owner=agent_data['owner'],
+            purpose=agent_data['purpose'],
+            created_at=agent_data.get('created_at', None),
+            updated_at=agent_data.get('updated_at', None)
+        )
+
+    @staticmethod
     def set_id(agent: "Agent") -> "Agent":
         agent.id = str(uuid4())
 
@@ -98,7 +113,11 @@ class Agent(BaseModel):
         agent.updated_at = str(datetime.now())
 
         return agent
-
+    
+class AgentTypes(Enum):
+    CHAT_GPT = 'chatgpt'
+    KNOWLEDGE = 'knowledge'
+    HISTORY = 'history'
 
 
 

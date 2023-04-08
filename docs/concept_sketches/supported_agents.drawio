@@ -1,0 +1,97 @@
+<mxfile host="app.diagrams.net" modified="2023-04-08T02:52:18.762Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" etag="KAvxbVB3VHo8R9Q02liW" version="21.1.4" type="device">
+  <diagram name="Page-1" id="tI96HpVFfKXPBNyNSezJ">
+    <mxGraphModel dx="1434" dy="832" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-1" value="Agents" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="50" y="10" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-2" value="GPT 4" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="240" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-4" value="NLP" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="90" y="170" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-5" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="200" y="160" as="sourcePoint" />
+            <mxPoint x="200" y="960" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-6" value="GPT 3.5" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="360" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-7" value="Base GPT" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-8" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="40" y="200" as="sourcePoint" />
+            <mxPoint x="840" y="200" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-9" value="HuggingFace" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="60" y="600" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-10" value="Semantic Search" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="220" y="170" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-11" value="Pinecone" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="250" y="240" width="60" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-12" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="360" y="160" as="sourcePoint" />
+            <mxPoint x="360" y="960" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-13" value="Image&lt;br&gt;Generation" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="390" y="170" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-14" value="Stable Diffusion" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="240" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-15" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480" y="160" as="sourcePoint" />
+            <mxPoint x="480" y="960" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-16" value="Audio" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="525.41" y="170" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-17" value="Azure Speech Synthesis" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" vertex="1" parent="1">
+          <mxGeometry x="526.82" y="240" width="68" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-18" value="Azure Speech Transcription" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" vertex="1" parent="1">
+          <mxGeometry x="525.41" y="370" width="70.83" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-19" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="640" y="160" as="sourcePoint" />
+            <mxPoint x="640" y="962" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-20" value="Video" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="660" y="170" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-21" value="" style="endArrow=none;dashed=1;html=1;dashPattern=1 3;strokeWidth=2;rounded=0;" edge="1" parent="1">
+          <mxGeometry width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="740" y="160" as="sourcePoint" />
+            <mxPoint x="740" y="962" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-22" value="Avatar" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="760" y="170" width="60" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-23" value="Viseme" style="image;aspect=fixed;html=1;points=[];align=center;fontSize=12;image=img/lib/azure2/ai_machine_learning/Cognitive_Services.svg;" vertex="1" parent="1">
+          <mxGeometry x="756" y="240" width="68" height="48" as="geometry" />
+        </mxCell>
+        <mxCell id="k2dy6iUyz_-AeRZJoa5m-24" value="" style="sketch=0;outlineConnect=0;fontColor=#232F3E;gradientColor=none;fillColor=#232F3D;strokeColor=none;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;fontSize=12;fontStyle=0;aspect=fixed;pointerEvents=1;shape=mxgraph.aws4.question;" vertex="1" parent="1">
+          <mxGeometry x="669.5" y="241" width="41" height="78" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

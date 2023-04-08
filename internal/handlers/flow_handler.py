@@ -6,4 +6,7 @@ class FlowHandler:
 
     def handle_get_availability_config(self, version: str):
         return self.flow_service.get_flow_availability_config(version)
+    
+    def handle_get_flow_template(self, nodes, edges):
+        pass
 

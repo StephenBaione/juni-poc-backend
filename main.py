@@ -1,3 +1,5 @@
+from typing import Optional
+from pydantic import BaseModel
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Depends
 from starlette.websockets import WebSocketState
@@ -79,6 +81,7 @@ class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: List[WebSocket] = []
         # self.speech_recognition_service = SpeechRecognitionService(self.speech_buffer)
+
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -108,7 +111,7 @@ manager = ConnectionManager()
 
 async def get_data_loop(websocket: WebSocket, client_id: str):
     while websocket.application_state.CONNECTED == WebSocketState.CONNECTED \
-    and websocket.client_state.CONNECTED == WebSocketState.CONNECTED:
+            and websocket.client_state.CONNECTED == WebSocketState.CONNECTED:
         try:
             data = await websocket.receive_bytes()
             GoogleSpeechWrapper.receive_data(client_id, data)
@@ -116,6 +119,7 @@ async def get_data_loop(websocket: WebSocket, client_id: str):
         except Exception as e:
             print('get_data_loop', e)
             break
+
 
 @app.websocket("/audio/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
@@ -149,15 +153,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         print('disconnecting...')
         await GoogleSpeechWrapper.stop_recognition_stream(client_id)
 
-from pydantic import BaseModel
 
-from typing import Optional
 class SpeechRequest(BaseModel):
     text: str
     voice: Optional[str]
 
+
 @app.get('/text_to_speech')
-async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
+async def get_text_to_speech(request: Request, data=Depends(SpeechRequest)):
     try:
         print(data)
         text = data.text
@@ -180,9 +183,194 @@ async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
         return {'error': str(e)}
 
 if __name__ == '__main__':
-    from internal.flow.flows.flow_builder import FlowRunner
+    from internal.flow.flows.flow_builder import FlowRunner, FlowBuilder
+
+    nodes = [
+        {
+            "id": "0",
+            "position": {
+                "x": 840,
+                "y": 64.19999999999999
+            },
+            "data": {
+                "label": "ChatInput",
+                "type": "input"
+            },
+            "width": 150,
+            "height": 37,
+            "selected": False,
+            "positionAbsolute": {
+                "x": 840,
+                "y": 64.19999999999999
+            },
+            "dragging": False
+        },
+        {
+            "id": "1",
+            "position": {
+                "x": 717,
+                "y": 201
+            },
+            "data": {
+                "label": "History Agent",
+                "type": "agent",
+                "agent": {
+                    "updated_at": "2023-04-04 14:58:34.463976",
+                    "purpose": "Chat History",
+                    "service": "pinecone",
+                    "created_at": None,
+                    "output_type": "text",
+                    "owner": "54c54359-3f55-4c5c-bb15-fb6457bec214",
+                    "input_type": "text",
+                    "id": None,
+                    "name": "History Agent",
+                    "type": "history"
+                }
+            },
+            "width": 150,
+            "height": 37,
+            "selected": False,
+            "positionAbsolute": {
+                "x": 717,
+                "y": 201
+            },
+            "dragging": False
+        },
+        {
+            "id": "2",
+            "position": {
+                "x": 954,
+                "y": 195
+            },
+            "data": {
+                "label": "Knowledge Agent",
+                "type": "agent",
+                "agent": {
+                    "updated_at": "2023-04-03 23:15:36.566894",
+                    "purpose": "Chat Knowledge",
+                    "service": "pinecone",
+                    "created_at": "2023-04-03 23:15:36.566887",
+                    "output_type": "text",
+                    "owner": "54c54359-3f55-4c5c-bb15-fb6457bec214",
+                    "input_type": "text",
+                    "id": "37ee5199-7472-4e4c-ac12-7201927fed5a",
+                    "name": "Knowledge Agent",
+                    "type": "knowledge"
+                }
+            },
+            "width": 150,
+            "height": 37,
+            "selected": False,
+            "positionAbsolute": {
+                "x": 954,
+                "y": 195
+            },
+            "dragging": False
+        },
+        {
+            "id": "3",
+            "position": {
+                "x": 838,
+                "y": 351
+            },
+            "data": {
+                "label": "GPT Agent",
+                "type": "agent",
+                "agent": {
+                    "updated_at": "2023-04-03 23:14:30.867641",
+                    "purpose": "Chat Completion",
+                    "service": "openai",
+                    "created_at": "2023-04-03 23:14:30.867621",
+                    "output_type": "text",
+                    "owner": "54c54359-3f55-4c5c-bb15-fb6457bec214",
+                    "input_type": "text",
+                    "id": "369800bb-c551-4301-b218-3ef37f6f76d9",
+                    "name": "GPT Agent",
+                    "type": "ChatGPT"
+                }
+            },
+            "width": 150,
+            "height": 37,
+            "selected": False,
+            "positionAbsolute": {
+                "x": 838,
+                "y": 351
+            },
+            "dragging": False
+        },
+        {
+            "id": "4",
+            "position": {
+                "x": 0,
+                "y": 0
+            },
+            "data": {
+                "label": "ChatOutput",
+                "type": "output"
+            }
+        }
+    ]
+
+    edges = [
+        {
+            "source": "0",
+            "sourceHandle": None,
+            "target": "1",
+            "targetHandle": None,
+            "id": "reactflow__edge-0-1"
+        },
+        {
+            "source": "0",
+            "sourceHandle": None,
+            "target": "2",
+            "targetHandle": None,
+            "id": "reactflow__edge-0-2"
+        },
+        {
+            "source": "0",
+            "sourceHandle": None,
+            "target": "3",
+            "targetHandle": None,
+            "id": "reactflow__edge-0-3"
+        },
+        {
+            "source": "1",
+            "sourceHandle": None,
+            "target": "3",
+            "targetHandle": None,
+            "id": "reactflow__edge-1-3"
+        },
+        {
+            "source": "2",
+            "sourceHandle": None,
+            "target": "3",
+            "targetHandle": None,
+            "id": "reactflow__edge-2-3"
+        },
+        {
+            "source": "3",
+            "sourceHandle": None,
+            "target": "4",
+            "targetHandle": None,
+            "id": "reactflow__edge-3-4"
+        }
+    ]
+
+    flow_builder = FlowBuilder()
+    flow_template = flow_builder.build_flow(nodes, edges)
+    # valid = flow_builder.temp_validation(flow_template)
+
+    event_loop = asyncio.get_event_loop()
+    bfs_task = event_loop.create_task(
+        flow_builder.bfs(
+            input_node_key=flow_template['Input'],
+            flow_template=flow_template
+        )
+    )
+
+    result = event_loop.run_until_complete(asyncio.gather(bfs_task))
+    print(result)
 
     # uvicorn.run('main:app', host='localhost', port=8001, reload=True)
-    flow_runner = FlowRunner()
-    flow_runner.execute()
-
+    # flow_runner = FlowRunner()
+    # flow_runner.execute()

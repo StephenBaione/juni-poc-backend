@@ -1,4 +1,5 @@
 from internal.flow.flows.flow import Flow
+from internal.flow.flows.flow_builder import FlowBuilder
 
 from .dynamodb_service import DynamoDBService, ItemCrudResponse
 
@@ -10,8 +11,10 @@ class FlowService:
         self.flow_config_table = DynamoDBService('FlowConfig')
         self.flow_availability_config_table = DynamoDBService('FlowAvailabilityConfig')
 
-    def create_flow(flow_config):
-        pass
+        self.flow_builder = FlowBuilder()
+
+    def create_flow(self, nodes, edges):
+        return self.flow_builder.build_flow(nodes, edges)
 
     def get_flow_availability_config(self, version: str) -> ItemCrudResponse:
         try:

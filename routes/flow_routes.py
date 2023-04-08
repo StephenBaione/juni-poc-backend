@@ -9,3 +9,6 @@ flow_router = APIRouter(prefix='/flow', tags=['Flow'])
 async def get_flow_availability_config(version: str):
     return flow_handler.handle_get_availability_config(version)
 
+@flow_router.post('/build')
+async def build_flow(nodes):
+    pass

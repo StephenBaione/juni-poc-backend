@@ -3,21 +3,20 @@ from internal.services.chat_service import ChatService
 
 from .base_agent import BaseAgent
 
+from ..connections.sequential_connection import SequentialConnection
 
 from data.models.agents.agent import Agent
 from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
 class KnowledgeAgent(BaseAgent):
-    def __init__(self, agent, consumers, index: str, namespace: str) -> None:
-        super().__init__(agent, consumers)
+    def __init__(self, agent, connection: SequentialConnection = None, index: str = 'medical-documents', namespace: str = 'medical-docs') -> None:
+        super().__init__(agent, connection)
 
         self.index = index
         self.namespace = namespace
 
         self.pinecone_service = PineconeService()
         self.pinecone_service.load_index(index)
-
-        self.chat_service = ChatService()
 
     def set_options(self, index: str):
         self.pinecone_service.load_index(index)
@@ -27,57 +26,43 @@ class KnowledgeAgent(BaseAgent):
         self.namespace = namespace
 
     # TODO: For now assume chat message, implement other types later
-    def consume(self, chat_message: ChatMessage, response_dict, max_tokens=1000):
-        # Get the message send with the chat message
+    async def consume(self, chat_message: ChatMessage, max_tokens=1000):
+        await self.check_and_set_on_start()
+
+        # Extract text from chat message
         text = chat_message.message
 
         # Query the pinecone index for best matching results
         query_results: ItemCrudResponse = self.pinecone_service.plain_text_query(self.index, self.namespace, text)
         
-        # If the pinecone search fails, return crud response
-        if not query_results.success:
-            return query_results
-        
         # Grab the items and create the knowledge template
         knowledge_items = query_results.Item
-
-        # TODO: Allow user to use their own template, restrict to one input variable names {knowledge}
-        knowledge_template = \
-            f"The following documents are the most relevant pieces of information. Reference them in your answer.\n" \
-            "Background Knowledge:\n" \
-            "{knowledge}"
         
         # Parse through the returned knowledge items and grab the plain text
-        knowledge = ''
+        knowledge_messages = []
+        total_length = 0
         for knowledge_item in knowledge_items:
             message = knowledge_item.metadata['PlainText']
 
             # Make sure that token length stays below max length
-            tokens_left = max_tokens - len(knowledge_template) - len(knowledge)
+            tokens_left = max_tokens - total_length
             if len(message) > tokens_left:
-                message = message[:tokens_left]
-                knowledge += message
-                break
+                message = message[:max_tokens - total_length]
 
             # Append message
-            knowledge += message
-            
-        # Replace the varilable in template
-        template = knowledge_template.replace('{knowledge}', message)
+            knowledge_message = ChatMessage(
+                role=ChatRoles.AI_ROLE.value,
+                sender=self.agent.name,
+                conversation_id=chat_message.conversation_id,
+                user=chat_message.user,
+                user_id=chat_message.user_id,
+                agent_name=self.agent.name,
+                message=message
+            )
 
-        # This is considered a system message
-        role = ChatRoles.SYSTEM_ROLE.value
-        response_message = ChatMessage(
-            role=role,
-            sender=chat_message.sender,
-            conversation_id=chat_message.conversation_id,
-            user=chat_message.user,
-            user_id=chat_message.user_id,
-            agent_name='knowledge',
-            message=template
-        )
+            message_length = len(message)
+            total_length += message_length
+            knowledge_messages.append(knowledge_message)
 
-        self.chat_service.store_chat_message(response_message)
-        response_dict['knowledge'] = response_message
-        return self.broadcast([response_message, chat_message], response_dict)
-
+        self.connection.input_queue.put(knowledge_messages)
+        self.connection.on_output.set()
