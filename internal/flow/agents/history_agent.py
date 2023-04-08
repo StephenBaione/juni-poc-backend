@@ -22,8 +22,7 @@ class HistoryAgent(BaseAgent):
         # TODO: Make sure that the chat message are sorted by most recent first
 
         # get list of messages from dynamodb
-        # TODO: handle pagination for large conversations
-        result = self.conversation_service.list_user_chat_messages(chat_message.conversation_id, chat_message.user_id)
+        result = self.conversation_service.list_chat_messages(chat_message.conversation_id, chat_message.user_id)
         data = result.Item
 
         # create a list of chat messages

@@ -76,11 +76,6 @@ class ConversationService:
 
         return self.chat_dynamodb_service.scan_table(query_filter)
     
-    def list_user_chat_messages(self, conversation_id: str, user_id: str):
-        query_filter = Key('conversation_id').eq(conversation_id) & Key('user_id').eq(user_id)
-
-        return self.chat_dynamodb_service.scan_table(query_filter)
-    
     def calculate_split(self, length_messages: int, plain_text_messages, max_chars):
         # Can include full messages
         if length_messages < max_chars:
