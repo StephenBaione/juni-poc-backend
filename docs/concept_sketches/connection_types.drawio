@@ -1,0 +1,70 @@
+<mxfile host="app.diagrams.net" modified="2023-04-07T23:48:26.173Z" agent="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36" etag="lang9loPKye3DhmWfsbS" version="21.1.4" type="device">
+  <diagram name="Page-1" id="ucR5T-cVw3cc_0S0soX1">
+    <mxGraphModel dx="1434" dy="768" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-1" value="Connection Types:&lt;br&gt;- Parallel&lt;br&gt;- Sequential" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="40" width="210" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-2" value="- Sequential" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="40" y="115" width="90" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-5" value="Sequential connections only send the output of themselves, they do not include other agent outputs" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="160" width="280" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-6" target="eWM7lgoXgKXME9VX3DD8-8">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-6" value="Customer Question" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="200" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-11" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.4;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-8" target="eWM7lgoXgKXME9VX3DD8-9">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-8" value="Database of QA Pairs" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="315" y="310" width="130" height="90" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-9" value="QA Agent" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="330" y="480" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-12" value="Does not include customer question" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="450" y="510" width="210" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-13" value="- Parallel" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="35" y="555" width="70" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-16" value="Parallel conenctions are what allow you to combine agent outputs.&lt;br&gt;&lt;br&gt;When an agent is parallel with another, the agent that they are connected to will receive both inputs" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;" vertex="1" parent="1">
+          <mxGeometry x="40" y="600" width="240" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-24" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.55;exitY=0.95;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.4;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-17" target="eWM7lgoXgKXME9VX3DD8-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-17" value="Customer Service Manual" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="320" y="800" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-25" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;exitPerimeter=0;entryX=0.4;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-18" target="eWM7lgoXgKXME9VX3DD8-23">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-18" value="Chat History" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;" vertex="1" parent="1">
+          <mxGeometry x="525" y="800" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-21" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.4;entryY=0.1;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-20" target="eWM7lgoXgKXME9VX3DD8-17">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-22" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;entryPerimeter=0;" edge="1" parent="1" source="eWM7lgoXgKXME9VX3DD8-20" target="eWM7lgoXgKXME9VX3DD8-18">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-20" value="User that needs help" style="rounded=1;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="680" width="120" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-23" value="Customer Service agent" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+          <mxGeometry x="405" y="960" width="120" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="eWM7lgoXgKXME9VX3DD8-26" value="Receives both inputs" style="text;html=1;align=center;verticalAlign=middle;resizable=0;points=[];autosize=1;strokeColor=none;fillColor=none;" vertex="1" parent="1">
+          <mxGeometry x="525" y="1000" width="130" height="30" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
