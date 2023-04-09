@@ -16,16 +16,13 @@ class GPTAgent(BaseAgent):
         self.openai_service = OpenAIClient()
         self.chat_service = ChatService()
 
-    async def consume(self, chat_messages: List[ChatMessage], response_dict):
+    async def consume(self, chat_messages: List[ChatMessage]):
         if not isinstance(chat_messages, list):
             chat_messages = [chat_messages]
-
-        await self.check_and_set_on_start()
 
         completion = self.openai_service.get_chat_completion(messages=ChatMessage.as_openai_input(chat_messages))
         agent_chat_message = OpenAIClient.decode_completion_to_chat_message(completion, chat_messages[0])
 
         self.chat_service.store_chat_message(agent_chat_message)
 
-        self.connection.input_queue.put(agent_chat_message)
-        self.connection.on_output.set()
+        return agent_chat_message

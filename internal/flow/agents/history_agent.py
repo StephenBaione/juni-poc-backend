@@ -29,14 +29,13 @@ class HistoryAgent(BaseAgent):
 
         self.max_size = max_size
 
-    async def consume(self, chat_message: ChatMessage, response_dict):
+    async def consume(self, chat_messages: List[ChatMessage]):
         # Check to see if the start event has been set for connection
-        await self.check_and_set_on_start()
-
         # TODO: Make sure that the chat message are sorted by most recent first
 
         # Get list of messages from dynamodb
-        result = self.conversation_service.list_chat_messages(chat_message.conversation_id, chat_message.user_id)
+        chat_message = chat_messages[0]
+        result = self.conversation_service.list_chat_messages(chat_message.conversation_id)
         chat_message_list = result.Item
 
         # Create a list of chat messages
@@ -53,13 +52,13 @@ class HistoryAgent(BaseAgent):
 
             # For each dict message, create a ChatMessage object
             new_chat_message = ChatMessage(
-                id = message.get('id'),
-                role = message.get('role'),
-                sender = message.get('sender'),
-                conversation_id = message.get('conversation_id'),
-                user = message.get('user'),
-                user_id = message.get('user_id'),
-                agent_name = message.get('agent_name'),
+                id = chat_message_item.get('id'),
+                role = chat_message_item.get('role'),
+                sender = chat_message_item.get('sender'),
+                conversation_id = chat_message_item.get('conversation_id'),
+                user = chat_message_item.get('user'),
+                user_id = chat_message_item.get('user_id'),
+                agent_name = chat_message_item.get('agent_name'),
                 message = message
             )
 
@@ -67,5 +66,4 @@ class HistoryAgent(BaseAgent):
             messages.append(new_chat_message)
             total_length += message_length
 
-        self.connection.input_queue.put(messages)
-        self.connection.on_output.set()
+        return messages

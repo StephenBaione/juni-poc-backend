@@ -53,8 +53,8 @@ class SequentialConnection:
             response_dict = self.response_dict
             producer_data = self.input_queue.get(block=False)
 
-            response_dict[self.producer_agent.agent.name] = producer_data
-            return self.consumer_agent.consume(producer_data, response_dict)
+            for consumer_agent in self.consumer_agents:
+                return await consumer_agent.consume([producer_data], response_dict)
 
         except Exception as e:
             print(e)

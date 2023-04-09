@@ -16,8 +16,8 @@ class ChatInput:
     def set_connection(self, connection):
         self.connection = connection
 
-    def consume_input(self, chat_message: ChatMessage):
+    async def consume(self, chat_message: ChatMessage):
         response_dict = {}
-        return self.consumer.consume(chat_message, response_dict)
+        return chat_message
 
 

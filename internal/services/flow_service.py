@@ -3,6 +3,8 @@ from internal.flow.flows.flow_builder import FlowBuilder
 
 from .dynamodb_service import DynamoDBService, ItemCrudResponse
 
+from uuid import uuid4
+
 class FlowService:
     def __init__(self) -> None:
         self.flow_table = DynamoDBService('Flow')
@@ -10,6 +12,7 @@ class FlowService:
         self.flow_output_table = DynamoDBService('FlowOutput')
         self.flow_config_table = DynamoDBService('FlowConfig')
         self.flow_availability_config_table = DynamoDBService('FlowAvailabilityConfig')
+        self.flow_template_table = DynamoDBService('FlowTemplate')
 
         self.flow_builder = FlowBuilder()
 
@@ -38,6 +41,34 @@ class FlowService:
         except Exception as e:
             print(e)
 
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
+        
+    def save_flow_template(self, flow_template) -> ItemCrudResponse:
+        try:
+            _id = flow_template.get('id', None)
+
+            if _id is None:
+                flow_template['id'] = str(uuid4())
+
+            return self.flow_template_table.update_item(flow_template)
+
+        except Exception as e:
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
+        
+    def get_flow_template(self, flow_id) -> ItemCrudResponse:
+        try:
+            id_key = { 'id': flow_id }
+            return self.flow_template_table.get_item(None, id_keys=id_key)
+
+        except Exception as e:
             return ItemCrudResponse(
                 Item={},
                 success=False,

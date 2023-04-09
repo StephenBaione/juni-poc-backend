@@ -85,7 +85,7 @@ class ChatMessage(BaseModel):
                 )
 
             else:
-                raise ValueError('Invalid role to send to Openai')
+                continue
         return messages
     
     def as_template_message(self, chat_message) -> str:

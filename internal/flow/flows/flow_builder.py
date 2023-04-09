@@ -16,6 +16,7 @@ from ..connections.sequential_connection import SequentialConnection, Connection
 
 from typing import List, Any
 
+import asyncio
 from asyncio import Event
 
 from queue import Queue
@@ -164,10 +165,11 @@ class FlowBuilder:
             "ConsumerNodeKeys": consumer_node_keys
         }
 
-    async def bfs(
+    async def execute_flow(
         self,
         input_node_key,
-        flow_template
+        flow_template,
+        input_data
     ):
         """Perform a bredth first search on the flow template,
         to traverse and execute each node.
@@ -202,6 +204,23 @@ class FlowBuilder:
 
                     for consumer_node_key in result['ConsumerNodeKeys']:
                         queue.append(consumer_node_key)
+
+        agent_input_map[input_node_key] = input_data
+        for result in results:
+            producer = result['Producer']
+
+            producer_key = result['ProducerNodeKey']
+            producer_input = agent_input_map[producer_key]
+            output = await producer.consume(producer_input)
+
+            for consumer_key in result['ConsumerNodeKeys']:
+                if agent_input_map.get(consumer_key, None) is None:
+                    agent_input_map[consumer_key] = []
+
+                if isinstance(output, list):
+                    agent_input_map[consumer_key].extend(output)
+                else:
+                    agent_input_map[consumer_key].append(output)
 
         return results
 

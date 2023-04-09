@@ -8,6 +8,8 @@ from ..connections.sequential_connection import SequentialConnection
 from data.models.agents.agent import Agent
 from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
+from typing import List
+
 class KnowledgeAgent(BaseAgent):
     def __init__(self, agent, connection: SequentialConnection = None, index: str = 'medical-documents', namespace: str = 'medical-docs') -> None:
         super().__init__(agent, connection)
@@ -26,8 +28,8 @@ class KnowledgeAgent(BaseAgent):
         self.namespace = namespace
 
     # TODO: For now assume chat message, implement other types later
-    async def consume(self, chat_message: ChatMessage, max_tokens=1000):
-        await self.check_and_set_on_start()
+    async def consume(self, chat_messages: List[ChatMessage], max_tokens=1000):
+        chat_message = chat_messages[0]
 
         # Extract text from chat message
         text = chat_message.message
@@ -64,5 +66,4 @@ class KnowledgeAgent(BaseAgent):
             total_length += message_length
             knowledge_messages.append(knowledge_message)
 
-        self.connection.input_queue.put(knowledge_messages)
-        self.connection.on_output.set()
+        return knowledge_messages
