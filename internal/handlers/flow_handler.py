@@ -10,6 +10,10 @@ class SaveFlowRequest(BaseModel):
     edges: List[Any]
     flow_id: Optional[str]
 
+class RunFlowRequest(BaseModel):
+    flow_id: str
+    input_data: Any
+
 from uuid import uuid4
 
 class FlowHandler:
@@ -43,3 +47,20 @@ class FlowHandler:
     def handle_get_flow_template(self, nodes, edges):
         pass
 
+    def handle_delete_flow(self, flow_id):
+        # Check that flow exists
+        existing_flow = self.flow_service.get_flow_template(flow_id)
+
+        if not existing_flow.success or existing_flow.Item == {}:
+            return existing_flow
+        
+        return self.flow_service.delete_flow(flow_id)
+    
+    def handle_run_flow(self, flow_id, input_data):
+        flow = self.flow_service.get_flow_template(flow_id)
+
+        return self.flow_service.flow_builder.execute_flow(
+            input_node_key=flow['Input'],
+            flow_template=flow,
+            input_data=input_data
+        )

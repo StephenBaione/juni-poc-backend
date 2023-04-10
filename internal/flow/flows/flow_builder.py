@@ -138,7 +138,7 @@ class FlowBuilder:
 
         return node_obj
 
-    def create_node_connection(self, flow_template, node, node_key):
+    def create_node_connection(self, flow_template, node, node_key, output_node_key):
         # We are going to create a connection for the two agents,
         # then create the producer and consumer and add to connection
         
@@ -150,7 +150,7 @@ class FlowBuilder:
         # Set the producer object
         connection.set_producer_agent(producer_obj)
 
-        if node_key == flow_template['Output']:
+        if node_key == output_node_key:
             return None
 
         consumer_node_keys = node['Consumers']
@@ -190,17 +190,18 @@ class FlowBuilder:
 
         agent_input_map = {}
 
-        outputnode_key = None
+        outputnode_key = flow_template['Output']
         results = []
+        template = flow_template['Template']
         while queue:
             node_key = queue.popleft()
-            node = flow_template[node_key]
+            node = template[node_key]
 
             if node_key not in visisted:
                 visisted.add(node_key)
 
                 result = \
-                    self.create_node_connection(flow_template, node, node_key)
+                    self.create_node_connection(template, node, node_key, outputnode_key)
                 
                 if result is not None:
                     results.append(result)

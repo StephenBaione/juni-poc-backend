@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body
 
-from internal.handlers.flow_handler import FlowHandler, SaveFlowRequest
+from internal.handlers.flow_handler import FlowHandler, SaveFlowRequest, RunFlowRequest
 
 flow_handler = FlowHandler()
 flow_router = APIRouter(prefix='/flow', tags=['Flow'])
@@ -21,10 +21,14 @@ async def save_flow(save_flow_request: SaveFlowRequest = Body(...)):
 async def get_flow(flow_id: str):
     return flow_handler.handle_get_flow(flow_id)
 
+@flow_router.delete('/delete_flow/{flow_id}')
+async def delete_flow(flow_id: str):
+    return flow_handler.handle_delete_flow(flow_id)
+
 @flow_router.get('/user_flows/{user_id}')
 async def list_user_flows(user_id: str):
     return flow_handler.handle_list_user_flows(user_id)
 
-# @flow_router.get('/run')
-# async def run_flow(flow_id: str):
-#     return flow_handler
+@flow_router.post('/run_flow/{flow_id}')
+async def run_flow(run_flow_request: RunFlowRequest):
+    return flow_handler.handle_run_flow(run_flow_request.flow_id, run_flow_request.input_data)

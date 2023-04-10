@@ -96,4 +96,15 @@ class FlowService:
                 exception=e
             )
 
-    
+    def delete_flow(self, flow_id: str) -> ItemCrudResponse:
+        try:
+            id_key = { 'id': flow_id }
+
+            return self.flow_template_table.delete_item(None, item_key=id_key)
+
+        except Exception as e:
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
