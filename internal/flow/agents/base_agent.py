@@ -2,13 +2,9 @@ import abc
 
 from typing import Any, List
 
-from data.models.agents.agent import Agent, AgentInputTypes
+from data.models.agents.agent import Agent
 
 from ..connections.sequential_connection import SequentialConnection
-
-from pydantic import BaseModel
-
-import asyncio
 
 class BaseAgent(abc.ABC):
     def __init__(self, agent: Agent, connection: SequentialConnection = None) -> None:

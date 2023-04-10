@@ -115,8 +115,8 @@ class Agent(BaseModel):
         return agent
     
 class AgentTypes(Enum):
-    CHAT_GPT = 'chatgpt'
-    KNOWLEDGE = 'knowledge'
+    CHAT_GPT = 'chat_gpt'
+    SEMANTIC_SEARCH = 'semantic_search'
     HISTORY = 'history'
 
 

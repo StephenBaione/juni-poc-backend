@@ -11,7 +11,19 @@ async def get_flow_availability_config(version: str):
 
 @flow_router.post('/save')
 async def save_flow(save_flow_request: SaveFlowRequest = Body(...)):
-    return flow_handler.handle_build_flow_template(save_flow_request.nodes, save_flow_request.edges)
+    # If this is a new flow object, then it won't have an ID
+    save_flow_request = dict(save_flow_request)
+    flow_id = save_flow_request.get('flow_id', None)
+
+    return flow_handler.handle_save_flow_template(save_flow_request['nodes'], save_flow_request['edges'], save_flow_request['user_id'], flow_id)
+
+@flow_router.get('/get_flow/{flow_id}')
+async def get_flow(flow_id: str):
+    return flow_handler.handle_get_flow(flow_id)
+
+@flow_router.get('/user_flows/{user_id}')
+async def list_user_flows(user_id: str):
+    return flow_handler.handle_list_user_flows(user_id)
 
 # @flow_router.get('/run')
 # async def run_flow(flow_id: str):

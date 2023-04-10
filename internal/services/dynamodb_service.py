@@ -7,7 +7,7 @@ import pydantic
 from typing import Optional, Any, List, Union, Dict, Tuple
 
 class ItemCrudResponse(pydantic.BaseModel):
-    Item: Union[dict, List]
+    Item: Union[Dict, List]
     success: bool
     exception: Optional[Any] = None
 

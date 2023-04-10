@@ -9,7 +9,7 @@ from data.models.conversation.chat_message import ChatMessage, ChatRoles
 from data.models.agents.agent import AgentTypes, Agent
 
 from ..agents.gpt_agent import GPTAgent
-from ..agents.knowledge_agent import KnowledgeAgent
+from ..agents.semantic_search_agent import SemanticSearchAgent
 from ..agents.history_agent import HistoryAgent
 
 from ..connections.sequential_connection import SequentialConnection, ConnectionInput
@@ -46,6 +46,9 @@ class FlowTemplate(BaseModel):
     Output: str
 
     nodes: Any
+    edges: Any
+
+    template: Any
 
 # As a first test case, we'll manually run it
 class FlowRunner:
@@ -53,7 +56,7 @@ class FlowRunner:
         self.chat_output = ChatOutput()
 
         self.gpt_agent = GPTAgent(None, self.chat_output)
-        self.knowledge_agent = KnowledgeAgent(None, self.gpt_agent, 'medical-documents', 'medical-docs')
+        self.knowledge_agent = SemanticSearchAgent(None, self.gpt_agent, 'medical-documents', 'medical-docs')
         
         # Add a history agent,
         # Set arbitrary max token size,
@@ -122,13 +125,13 @@ class FlowBuilder:
 
         elif node_type == 'agent':
             agent = Agent.from_json(node['Agent'])
-            print(agent.type, AgentTypes.KNOWLEDGE.value)
+            print(agent.type, AgentTypes.SEMANTICSEARCH.value)
 
             if agent.type.lower() == AgentTypes.CHAT_GPT.value:
                 node_obj = GPTAgent(agent, connection)
             
-            elif agent.type.lower() == AgentTypes.KNOWLEDGE.value:
-                node_obj = KnowledgeAgent(agent, connection)
+            elif agent.type.lower() == AgentTypes.SEMANTICSEARCH.value:
+                node_obj = SemanticSearchAgent(agent, connection)
 
             elif agent.type.lower() == AgentTypes.HISTORY.value:
                 node_obj = HistoryAgent(agent, connection)
@@ -428,7 +431,10 @@ class FlowBuilder:
     def build_flow(self, nodes: List[Node], edges: List[Edge]):
         flow_template = {
             "Input": "",
-            "Output": ""
+            "Output": "",
+            "Nodes": nodes,
+            "Edges": edges,
+            "Template": {}
         }
 
         for node in nodes:
@@ -439,7 +445,7 @@ class FlowBuilder:
                 flow_template['Input'] = node_id
                 input_type = node_data['label']
 
-                flow_template[node_id] = {
+                flow_template["Template"][node_id] = {
                     "Type": NodeTypes.INPUT_TYPE.value,
                     "InputType": input_type,
                     "Consumers": []
@@ -450,7 +456,7 @@ class FlowBuilder:
 
                 ouput_type = node_data['label']
 
-                flow_template[node_id] = {
+                flow_template["Template"][node_id] = {
                     "Type": NodeTypes.OUTPUT_TYPE.value,
                     "OutputType": ouput_type,
                     "Consumers": []
@@ -458,7 +464,7 @@ class FlowBuilder:
 
             else:
                 agent = node_data['agent']
-                flow_template[node_id] = {
+                flow_template["Template"][node_id] = {
                     'Type': NodeTypes.AGENT_TYPE.value,
                     'Agent': agent,
                     'Consumers': []
@@ -468,7 +474,7 @@ class FlowBuilder:
             source_id = edge['source']
             target_id = edge['target']
 
-            source_node = flow_template[source_id]
+            source_node = flow_template["Template"][source_id]
 
             source_node['Consumers'].append(
                 target_id

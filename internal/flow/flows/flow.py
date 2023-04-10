@@ -2,7 +2,7 @@ from ..inputs.chat_input import ChatInput
 from ..outputs.chat_output import ChatOutput
 
 from ..agents.gpt_agent import GPTAgent
-from ..agents.knowledge_agent import KnowledgeAgent
+from ..agents.semantic_search_agent import SemanticSearchAgent
 
 from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
@@ -15,7 +15,7 @@ class Flow:
         self.chat_output = ChatOutput(self.output_queue)
         
         self.gpt_agent = GPTAgent(agent, [self.chat_output])
-        self.knowledge_agent = KnowledgeAgent(agent, [self.gpt_agent], 'medical-documents', 'medical-docs')
+        self.knowledge_agent = SemanticSearchAgent(agent, [self.gpt_agent], 'medical-documents', 'medical-docs')
         
         self.chat_input = ChatInput(self.knowledge_agent)
 

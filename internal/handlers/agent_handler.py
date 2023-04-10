@@ -19,7 +19,8 @@ class AgentHandler:
         return self.agent_service.delete_agent(owner, name)
     
     def handle_list_agent(self, owner: str) -> Agent:
-        return self.agent_service.list_agent(owner)
+        response = self.agent_service.list_agent(owner)
+        return response
     
     def handle_list_agent_names(self, owner: str) -> ItemCrudResponse:
         return self.agent_service.list_agent_names(owner)

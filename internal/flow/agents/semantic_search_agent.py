@@ -10,7 +10,7 @@ from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
 from typing import List
 
-class KnowledgeAgent(BaseAgent):
+class SemanticSearchAgent(BaseAgent):
     def __init__(self, agent, connection: SequentialConnection = None, index: str = 'medical-documents', namespace: str = 'medical-docs') -> None:
         super().__init__(agent, connection)
 
@@ -38,13 +38,13 @@ class KnowledgeAgent(BaseAgent):
         query_results: ItemCrudResponse = self.pinecone_service.plain_text_query(self.index, self.namespace, text)
         
         # Grab the items and create the knowledge template
-        knowledge_items = query_results.Item
+        search_items = query_results.Item
         
         # Parse through the returned knowledge items and grab the plain text
-        knowledge_messages = []
+        matching_messages = []
         total_length = 0
-        for knowledge_item in knowledge_items:
-            message = knowledge_item.metadata['PlainText']
+        for search_item in search_items:
+            message = search_item.metadata['PlainText']
 
             # Make sure that token length stays below max length
             tokens_left = max_tokens - total_length
@@ -64,6 +64,6 @@ class KnowledgeAgent(BaseAgent):
 
             message_length = len(message)
             total_length += message_length
-            knowledge_messages.append(knowledge_message)
+            matching_messages.append(knowledge_message)
 
-        return knowledge_messages
+        return matching_messages
