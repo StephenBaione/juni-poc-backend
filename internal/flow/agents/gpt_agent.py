@@ -21,7 +21,7 @@ class GPTAgent(BaseAgent):
             chat_messages = [chat_messages]
 
         completion = self.openai_service.get_chat_completion(messages=ChatMessage.as_openai_input(chat_messages))
-        agent_chat_message = OpenAIClient.decode_completion_to_chat_message(completion, chat_messages[0])
+        agent_chat_message = OpenAIClient.decode_completion_to_chat_message(completion, chat_messages[0], self.agent.name)
 
         self.chat_service.store_chat_message(agent_chat_message)
 

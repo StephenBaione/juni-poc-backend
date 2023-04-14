@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Body
 
-from internal.handlers.flow_handler import FlowHandler, SaveFlowRequest, RunFlowRequest
+from internal.handlers.flow_handler import FlowHandler, SaveFlowRequest, RunFlowRequest, FlowNameRequest
 
 flow_handler = FlowHandler()
 flow_router = APIRouter(prefix='/flow', tags=['Flow'])
@@ -31,4 +31,8 @@ async def list_user_flows(user_id: str):
 
 @flow_router.post('/run_flow/{flow_id}')
 async def run_flow(run_flow_request: RunFlowRequest):
-    return flow_handler.handle_run_flow(run_flow_request.flow_id, run_flow_request.input_data)
+    return await flow_handler.handle_run_flow(run_flow_request.flow_id, run_flow_request.input_data)
+
+@flow_router.post('/set_name/{flow_id}')
+async def set_flow_name(flow_id: str, flow_name_request: FlowNameRequest = Body(...)):
+    return flow_handler.handle_set_flow_name(flow_id, flow_name_request.flow_name)

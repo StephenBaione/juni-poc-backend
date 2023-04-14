@@ -17,7 +17,9 @@ class ChatInput:
         self.connection = connection
 
     async def consume(self, chat_message: ChatMessage):
-        response_dict = {}
+        if type(chat_message) is dict:
+            chat_message = ChatMessage.from_dict(chat_message)
+
         return chat_message
 
 

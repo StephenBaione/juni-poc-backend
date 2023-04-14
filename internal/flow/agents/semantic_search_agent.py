@@ -59,6 +59,7 @@ class SemanticSearchAgent(BaseAgent):
                 user=chat_message.user,
                 user_id=chat_message.user_id,
                 agent_name=self.agent.name,
+                flow_id=chat_message.flow_id,
                 message=message
             )
 

@@ -53,7 +53,10 @@ class FlowService:
     def save_flow_template(self, flow_template) -> ItemCrudResponse:
         try:
             _id = flow_template.get('id', None)
+
+            new_template = False
             if _id is None:
+                new_template = True
                 flow_template['id'] = str(uuid4())
 
             # Boto3 isn't able to store floats, only this Decimal class

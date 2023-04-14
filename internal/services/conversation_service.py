@@ -235,6 +235,9 @@ class ConversationService:
         chat_message = ChatMessage.set_datetimes(chat_message)
 
         # Store embedding in pinecone
+        if chat_message.agent_name is None:
+            chat_message.agent_name = 'None'
+
         pinecone_chat_item = PineConeChatItem.from_chat_message(chat_message, message_embedding)
         upsert_result = self.pinecone_service.upsert_data(PineConeIndexes.CHAT_INDEX.value, pinecone_chat_item)
         

@@ -125,12 +125,12 @@ class FlowBuilder:
 
         elif node_type == 'agent':
             agent = Agent.from_json(node['Agent'])
-            print(agent.type, AgentTypes.SEMANTICSEARCH.value)
+            print(agent.type, AgentTypes.SEMANTIC_SEARCH.value)
 
             if agent.type.lower() == AgentTypes.CHAT_GPT.value:
                 node_obj = GPTAgent(agent, connection)
             
-            elif agent.type.lower() == AgentTypes.SEMANTICSEARCH.value:
+            elif agent.type.lower() == AgentTypes.SEMANTIC_SEARCH.value:
                 node_obj = SemanticSearchAgent(agent, connection)
 
             elif agent.type.lower() == AgentTypes.HISTORY.value:
@@ -167,6 +167,18 @@ class FlowBuilder:
             "ProducerNodeKey": node_key,
             "ConsumerNodeKeys": consumer_node_keys
         }
+    
+    async def task_runner(task_queue: Queue, agent_input_map: dict, agent_receive_map: dict):
+        while True:
+            if not task_queue.empty():
+                try:
+                    task = task_queue.get(block=False)
+
+                    node_id = task["id"]
+
+
+                except Exception as e:
+                    continue
 
     async def execute_flow(
         self,
@@ -185,10 +197,14 @@ class FlowBuilder:
         """
         visisted = set()
 
-        input_node = flow_template[input_node_key]
+        input_node = flow_template["Template"][input_node_key]
         queue = deque([input_node_key])
 
         agent_input_map = {}
+        agent_receive_map = {}
+        producer_count_map = {}
+
+        task_queue = Queue()
 
         outputnode_key = flow_template['Output']
         results = []
@@ -209,24 +225,54 @@ class FlowBuilder:
                     for consumer_node_key in result['ConsumerNodeKeys']:
                         queue.append(consumer_node_key)
 
+                        producer_count_map[consumer_node_key] = producer_count_map.get(consumer_node_key, 0) + 1
+
+                        if agent_receive_map.get(consumer_node_key, None) is None:
+                            agent_receive_map[consumer_node_key] = {
+                                'Producers': { 
+                                    result['ProducerNodeKey']: False
+                                }
+                            }
+
+                        else:
+                            agent_receive_map[consumer_node_key]['Producers'][result['ProducerNodeKey']] = False
+
+        # await self.task_runner(task_queue, agent_input_map, agent_receive_map)
+        
+        agent_outputs = {
+            'Output': outputnode_key
+        }
+
         agent_input_map[input_node_key] = input_data
-        for result in results:
+        while len(results) > 0:
+            result = results.pop(0)
             producer = result['Producer']
+
+            # Check that all producer nodes have finished for this node
+            producer_count = producer_count_map.get(result['ProducerNodeKey'], 0)
+            if producer_count > 0:
+                results.append(result)
+                continue
 
             producer_key = result['ProducerNodeKey']
             producer_input = agent_input_map[producer_key]
             output = await producer.consume(producer_input)
+            agent_outputs[producer_key] = output
 
             for consumer_key in result['ConsumerNodeKeys']:
+                producer_count_map[consumer_key] -= 1
+
                 if agent_input_map.get(consumer_key, None) is None:
                     agent_input_map[consumer_key] = []
 
                 if isinstance(output, list):
                     agent_input_map[consumer_key].extend(output)
+                    agent_receive_map[consumer_key][producer_key] = True
                 else:
                     agent_input_map[consumer_key].append(output)
+                    agent_receive_map[consumer_key][producer_key] = True
 
-        return results
+        return agent_outputs
 
 
 

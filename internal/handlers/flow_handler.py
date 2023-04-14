@@ -1,8 +1,10 @@
+from uuid import uuid4
 from ..services.flow_service import FlowService
 
 from pydantic import BaseModel
 
 from typing import List, Any, Optional
+
 
 class SaveFlowRequest(BaseModel):
     user_id: str
@@ -10,11 +12,15 @@ class SaveFlowRequest(BaseModel):
     edges: List[Any]
     flow_id: Optional[str]
 
+
 class RunFlowRequest(BaseModel):
     flow_id: str
     input_data: Any
 
-from uuid import uuid4
+
+class FlowNameRequest(BaseModel):
+    flow_name: str
+
 
 class FlowHandler:
     def __init__(self) -> None:
@@ -22,11 +28,11 @@ class FlowHandler:
 
     def handle_get_availability_config(self, version: str):
         return self.flow_service.get_flow_availability_config(version)
-    
+
     def handle_get_flow(self, flow_id: str):
         return self.flow_service.get_flow_template(flow_id)
-    
-    def handle_save_flow_template(self, nodes, edges, user_id, flow_id = None):
+
+    def handle_save_flow_template(self, nodes, edges, user_id, flow_id=None):
         # Build the flow
         flow_template = self.flow_service.flow_builder.build_flow(nodes, edges)
 
@@ -40,7 +46,7 @@ class FlowHandler:
         result = self.flow_service.save_flow_template(flow_template)
 
         return result
-    
+
     def handle_list_user_flows(self, user_id: str):
         return self.flow_service.list_user_flows(user_id)
 
@@ -53,14 +59,31 @@ class FlowHandler:
 
         if not existing_flow.success or existing_flow.Item == {}:
             return existing_flow
-        
+
         return self.flow_service.delete_flow(flow_id)
-    
-    def handle_run_flow(self, flow_id, input_data):
+
+    async def handle_run_flow(self, flow_id, input_data):
         flow = self.flow_service.get_flow_template(flow_id)
 
-        return self.flow_service.flow_builder.execute_flow(
-            input_node_key=flow['Input'],
-            flow_template=flow,
-            input_data=input_data
-        )
+        if not flow.success or flow.Item == {}:
+            return flow
+
+        flow = flow.Item
+
+        return await self.flow_service.flow_builder.execute_flow(
+                input_node_key=flow["Input"],
+                flow_template=flow,
+                input_data=input_data
+            )
+
+    def handle_set_flow_name(self, flow_id, flow_name):
+        # Get flow from db
+        flow_result = self.flow_service.get_flow_template(flow_id)
+
+        if not flow_result.success or flow_result.Item == {}:
+            return flow_result
+
+        flow = flow_result.Item
+        flow['name'] = flow_name
+
+        return self.flow_service.save_flow_template(flow)

@@ -8,18 +8,9 @@ from uuid import uuid4
 
 class Conversation(BaseModel):
     id: Optional[str]
-
     nickname: str
-
-    agent_name: str
-    agent_owner: str
-
-    template_name: str
-    template_owner: str
-
     user_id: str
-
-    index_name: str
+    flow_id: str
 
     created_at: Optional[str]
     updated_at: Optional[str]

@@ -58,12 +58,14 @@ class HistoryAgent(BaseAgent):
                 conversation_id = chat_message_item.get('conversation_id'),
                 user = chat_message_item.get('user'),
                 user_id = chat_message_item.get('user_id'),
-                agent_name = chat_message_item.get('agent_name'),
-                message = message
+                agent_name = self.agent.name,
+                message = message,
+                flow_id=chat_message.flow_id
             )
 
             # Add message and update total length
             messages.append(new_chat_message)
             total_length += message_length
 
+        self.conversation_service.store_chat_message(chat_message)
         return messages

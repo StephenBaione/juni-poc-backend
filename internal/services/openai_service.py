@@ -222,26 +222,31 @@ class OpenAIClient:
             return None
 
     @staticmethod
-    def create_openai_chat_message(message, prompt_message: ChatMessage) -> ChatMessage:
+    def create_openai_chat_message(message, prompt_message: ChatMessage, agent_name) -> ChatMessage:
+        if not isinstance(prompt_message, dict):
+            prompt_message = dict(prompt_message)
+
         return ChatMessage(
             role=ChatRoles.AI_ROLE.value,
-            user_id=prompt_message.user_id,
-            sender=prompt_message.agent_name,
-            conversation_id=prompt_message.conversation_id,
-            user=prompt_message.user,
-            agent_name=prompt_message.agent_name,
-            message=message
+            user_id=prompt_message['user_id'],
+            sender=agent_name,
+            conversation_id=prompt_message['conversation_id'],
+            user=prompt_message['user'],
+            flow_id=prompt_message['flow_id'],
+            message=message,
+            agent_name=agent_name
         )
+    
 
     @staticmethod
-    def decode_completion_to_chat_message(completion, prompt_message: ChatMessage):
+    def decode_completion_to_chat_message(completion, prompt_message: ChatMessage, agent_name = None):
         choices = completion['choices']
         if len(choices) == 0:
             return None
 
         message = choices[0]['message']['content']
         message = message.strip()
-        return OpenAIClient.create_openai_chat_message(message, prompt_message)
+        return OpenAIClient.create_openai_chat_message(message, prompt_message, agent_name)
         
         
     def create_fine_tune(self, training_file, model="ada", **options):
