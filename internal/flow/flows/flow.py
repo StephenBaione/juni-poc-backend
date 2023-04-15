@@ -2,6 +2,7 @@ from ..inputs.chat_input import ChatInput
 from ..outputs.chat_output import ChatOutput
 
 from ..agents.gpt_agent import GPTAgent
+from ..agents.semantic_search_agent import SemanticSearchAgent
 
 from data.models.conversation.chat_message import ChatMessage, ChatRoles
 
@@ -11,9 +12,12 @@ class Flow:
     def __init__(self, agent) -> None:
         self.output_queue = Queue()
 
-        self.text_output = ChatOutput(self.output_queue)
-        self.gpt_agent = GPTAgent(agent, self.text_output)
-        self.text_input = ChatInput(self.gpt_agent)
+        self.chat_output = ChatOutput(self.output_queue)
+        
+        self.gpt_agent = GPTAgent(agent, [self.chat_output])
+        self.knowledge_agent = SemanticSearchAgent(agent, [self.gpt_agent], 'medical-documents', 'medical-docs')
+        
+        self.chat_input = ChatInput(self.knowledge_agent)
 
     def start_flow(self):
         chat_message = ChatMessage(

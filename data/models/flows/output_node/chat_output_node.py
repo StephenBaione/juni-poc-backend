@@ -1,5 +1,4 @@
-from .output_node import Out, InputNodeIOTypes
+from .output_node import OutputNode, OutputtNodeIOTypes
 
-class ChatInputNode(InputNode):
-    input_type = InputNodeIOTypes.CHAT_INPUT.value
-    output_type = InputNodeIOTypes.CHAT_OUTPUT.value
+class ChatOutputNode(OutputNode):
+    _type = OutputtNodeIOTypes.CHAT.value

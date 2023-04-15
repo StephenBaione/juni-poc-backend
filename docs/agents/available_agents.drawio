@@ -1,0 +1,28 @@
+<mxfile host="65bd71144e">
+    <diagram id="s8YJhtwwuHZkCICx6wCm" name="Page-1">
+        <mxGraphModel dx="833" dy="709" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+            <root>
+                <mxCell id="0"/>
+                <mxCell id="1" parent="0"/>
+                <mxCell id="2" value="Semantic Search" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="40" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="3" value="&lt;b&gt;ChatGPT&lt;/b&gt;:&lt;br&gt;- Service: openai&lt;br&gt;- Type: chat_gpt&lt;br&gt;- InputType: text&lt;br&gt;- OutputType: text" style="rounded=0;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="80" width="120" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="4" value="NLP" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="280" y="40" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="5" value="&lt;b&gt;SemanticSearch&lt;/b&gt;:&lt;br&gt;- Service: pinecone&lt;br&gt;- Type: semantic_search&lt;br&gt;- InputType: text&lt;br&gt;- OutputType: text" style="rounded=0;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="80" y="80" width="120" height="120" as="geometry"/>
+                </mxCell>
+                <mxCell id="6" value="Memory" style="rounded=0;whiteSpace=wrap;html=1;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="40" width="120" height="40" as="geometry"/>
+                </mxCell>
+                <mxCell id="7" value="&lt;b&gt;History&lt;/b&gt;:&lt;br&gt;- Service: dynamodb&lt;br&gt;- Type: history&lt;br&gt;- InputType: text&lt;br&gt;- OutputType: text" style="rounded=0;whiteSpace=wrap;html=1;align=left;" vertex="1" parent="1">
+                    <mxGeometry x="480" y="80" width="120" height="120" as="geometry"/>
+                </mxCell>
+            </root>
+        </mxGraphModel>
+    </diagram>
+</mxfile>

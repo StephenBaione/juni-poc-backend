@@ -36,7 +36,9 @@ class ChatMessage(BaseModel):
     user: str
     user_id: str
 
-    agent_name: str
+    agent_name: Optional[str]
+    
+    flow_id: str
 
     message: str
 
@@ -45,6 +47,22 @@ class ChatMessage(BaseModel):
 
     def __str__(self):
         return json.dumps(dict(self))
+    
+    @staticmethod
+    def from_dict(chat_message_data) -> "ChatMessage":
+        return ChatMessage(
+            id=chat_message_data.get('id', None),
+            role=chat_message_data['role'],
+            sender=chat_message_data['sender'],
+            conversation_id=chat_message_data['conversation_id'],
+            user=chat_message_data['user'],
+            user_id=chat_message_data['user_id'],
+            agent_name=chat_message_data.get('agent_name', None),
+            message=chat_message_data['message'],
+            flow_id=chat_message_data['flow_id'],
+            created_at=chat_message_data.get('created_at', None),
+            updated_at=chat_message_data.get('updated_at', None)
+        )
     
     @staticmethod
     def set_id(chat_message: "ChatMessage") -> "ChatMessage":
@@ -68,24 +86,28 @@ class ChatMessage(BaseModel):
             chat_messages = [chat_messages]
 
         messages = []
+
         for chat_message in chat_messages:
-            if chat_message.role == ChatRoles.AI_ROLE.value:
+            if not isinstance(chat_message, dict):
+                chat_message = dict(chat_message)
+
+            if chat_message['role'] == ChatRoles.AI_ROLE.value:
                 messages.append(
-                    { 'role': chat_message.role, 'content': chat_message.message }
+                    { 'role': ChatRoles.AI_ROLE.value, 'content': chat_message['message'] }
                 )
 
-            elif chat_message.role == ChatRoles.SYSTEM_ROLE.value:
+            elif chat_message['role'] == ChatRoles.SYSTEM_ROLE.value:
                 messages.append(
-                    { 'role': chat_message.role, 'content': chat_message.message }
+                    { 'role': ChatRoles.SYSTEM_ROLE.value, 'content': chat_message['message'] }
                 )
 
-            elif chat_message.role == ChatRoles.USER_ROLE.value:
+            elif chat_message['role'] == ChatRoles.USER_ROLE.value:
                 messages.append(
-                    { 'role': chat_message.role, 'content': chat_message.message }
+                    { 'role': ChatRoles.USER_ROLE.value, 'content': chat_message['message'] }
                 )
 
             else:
-                raise ValueError('Invalid role to send to Openai')
+                continue
         return messages
     
     def as_template_message(self, chat_message) -> str:

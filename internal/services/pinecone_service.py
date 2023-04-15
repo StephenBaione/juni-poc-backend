@@ -72,8 +72,8 @@ class ChatMetaData(pydantic.BaseModel):
     user_id: str
 
     # Track the agent that is involved
-    agent_owner: str
-    agent_name: str
+    agent_owner: typing.Optional[str]
+    agent_name: typing.Optional[str]
 
     created_at: str
 

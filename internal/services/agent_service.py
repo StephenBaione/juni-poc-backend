@@ -85,5 +85,8 @@ class AgentService:
     def list_agent_supported_service(self, limit):
         return self.dynamodb_service_agent_supported_service.scan_table(None, limit)
 
+    def update_available_agents_config(self, available_agent_config):
+        return self.dynamodb_service_available_agents.update_item(available_agent_config)
+
     def get_available_agents_config(self, version: str):
         return self.dynamodb_service_available_agents.get_item(version)

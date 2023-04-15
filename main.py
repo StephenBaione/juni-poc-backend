@@ -1,3 +1,5 @@
+from typing import Optional
+from pydantic import BaseModel
 from typing import List
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, Request, Response, Depends
 from starlette.websockets import WebSocketState
@@ -79,6 +81,7 @@ class ConnectionManager:
     def __init__(self) -> None:
         self.active_connections: List[WebSocket] = []
         # self.speech_recognition_service = SpeechRecognitionService(self.speech_buffer)
+
     async def connect(self, websocket: WebSocket) -> None:
         await websocket.accept()
         self.active_connections.append(websocket)
@@ -108,7 +111,7 @@ manager = ConnectionManager()
 
 async def get_data_loop(websocket: WebSocket, client_id: str):
     while websocket.application_state.CONNECTED == WebSocketState.CONNECTED \
-    and websocket.client_state.CONNECTED == WebSocketState.CONNECTED:
+            and websocket.client_state.CONNECTED == WebSocketState.CONNECTED:
         try:
             data = await websocket.receive_bytes()
             GoogleSpeechWrapper.receive_data(client_id, data)
@@ -116,6 +119,7 @@ async def get_data_loop(websocket: WebSocket, client_id: str):
         except Exception as e:
             print('get_data_loop', e)
             break
+
 
 @app.websocket("/audio/ws/{client_id}")
 async def websocket_endpoint(websocket: WebSocket, client_id: int):
@@ -149,15 +153,14 @@ async def websocket_endpoint(websocket: WebSocket, client_id: int):
         print('disconnecting...')
         await GoogleSpeechWrapper.stop_recognition_stream(client_id)
 
-from pydantic import BaseModel
 
-from typing import Optional
 class SpeechRequest(BaseModel):
     text: str
     voice: Optional[str]
 
+
 @app.get('/text_to_speech')
-async def get_text_to_speech(request: Request, data = Depends(SpeechRequest)):
+async def get_text_to_speech(request: Request, data=Depends(SpeechRequest)):
     try:
         print(data)
         text = data.text

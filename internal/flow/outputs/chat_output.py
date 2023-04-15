@@ -2,9 +2,14 @@ from queue import Queue
 
 from data.models.conversation.chat_message import ChatMessage
 
-class ChatOutput:
-    def __init__(self, output_queue: Queue) -> None:
-        self.output_queue = output_queue
+from typing import List
 
-    def consume(self, chat_message: ChatMessage):
-        self.output_queue.put(chat_message)
+class ChatOutput:
+    def __init__(self, connection = None) -> None:
+        self.connection = connection
+
+    def set_connection(self, connection):
+        self.connection = connection
+
+    def consume(self, items: List, response_dict):
+        return items, response_dict

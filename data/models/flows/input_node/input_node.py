@@ -9,14 +9,12 @@ from datetime import datetime
 from enum import Enum
 
 class InputNodeIOTypes(Enum):
-    CHAT_INPUT = 'chat_input'
-    CHAT_OUTPUT = 'chat_output'
+    CHAT = 'ChatInput'
 
 class InputNode(BaseModel):
     id: Optional[str]
 
-    input_type: str
-    output_type: str
+    _type: str
 
     @staticmethod
     def set_id(input_node: "InputNode") -> "InputNode":
