@@ -71,10 +71,19 @@ class ConversationService:
 
         return self.dynamodb_service.get_item(None, id_keys=id_keys)
     
-    def list_chat_messages(self, conversation_id: str):
+    def list_chat_messages(self, conversation_id: str, sort=True):
         query_filter = Key('conversation_id').eq(conversation_id) # & Key('field').eq(value)
 
-        return self.chat_dynamodb_service.scan_table(query_filter)
+
+        result = self.chat_dynamodb_service.scan_table(query_filter)
+        if sort and result.success and result.Item != {}:
+            items = result.Item
+
+            # Sort chat messages by created_at field
+            sorted_item = sorted(items, key=lambda x: x['created_at'])
+            result.Item = sorted_item
+
+        return result
     
     def calculate_split(self, length_messages: int, plain_text_messages, max_chars):
         # Can include full messages
