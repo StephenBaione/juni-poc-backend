@@ -4,6 +4,8 @@ from typing import Optional, List, Any, Union, Dict
 
 from uuid import uuid4
 
+import os
+
 class AuthToken(BaseModel):
     AccessToken: str
     ExpiresIn: int
@@ -29,12 +31,15 @@ class User(BaseModel):
     confirmed: bool
     auth_token_set: bool = False
 
+    avatar_url: str = os.getenv('AWS_DEFAULT_AVATAR_URL')
+
     def __iter__(self):
         yield 'id', self.id
         yield 'username', self.username
         yield 'email', self.email
         yield 'confirmed', self.confirmed
         yield 'auth_token_set', self.auth_token_set
+        yield 'avatar_url', self.avatar_url
 
         if self.auth_token_set:
             yield 'auth_token', dict(self.auth_token)

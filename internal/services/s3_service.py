@@ -38,4 +38,4 @@ class S3Service:
             image_array = np.array(image)
             return image_array
         except Exception as e:
-            pass
+            print('Error getting image from S3: ', e)
