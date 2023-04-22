@@ -11,8 +11,8 @@ from data.models.conversation.chat_message import ChatMessage, ChatRoles
 from typing import List
 
 class SemanticSearchAgent(BaseAgent):
-    def __init__(self, agent, connection: SequentialConnection = None, index: str = 'medical-documents', namespace: str = 'medical-docs') -> None:
-        super().__init__(agent, connection)
+    def __init__(self, agent, node_config, connection: SequentialConnection = None, index: str = 'medical-documents', namespace: str = 'medical-docs') -> None:
+        super().__init__(agent, node_config, connection)
 
         self.index = index
         self.namespace = namespace
@@ -44,6 +44,9 @@ class SemanticSearchAgent(BaseAgent):
         matching_messages = []
         total_length = 0
         for search_item in search_items:
+            if search_item.score < 0.8:
+                continue
+
             message = search_item.metadata['PlainText']
 
             # Make sure that token length stays below max length

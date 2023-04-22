@@ -11,7 +11,7 @@ from typing import List
 from ..connections.sequential_connection import SequentialConnection
 
 class HistoryAgent(BaseAgent):
-    def __init__(self, agent, connection: SequentialConnection = None, max_size=1000) -> None:
+    def __init__(self, agent, node_config, connection: SequentialConnection = None, max_size=1000) -> None:
         """A HistoryAgent has the ability to reference the history of a session.
         For now, this means that a history agent is able to reference the chat history between a user and an agent,
         With the intent of supplying that history to provide model with conversational context
@@ -21,7 +21,7 @@ class HistoryAgent(BaseAgent):
             connection (SequentialConnection): A connection object responsible for handling data transfer between agents
             max_size (int, optional): Maximum token size for history agent output. Defaults to 1000.
         """
-        super().__init__(agent, connection)
+        super().__init__(agent, node_config, connection)
 
         # self.chat_service = ChatService()
         self.conversation_service = ConversationService()
