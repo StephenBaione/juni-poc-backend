@@ -27,36 +27,50 @@ class BaseAgent(abc.ABC):
         """
         pass
 
-    def format_input(self, data):
+    def format_input(self, data: List | Any) -> List[Any]:
+        """Format the input for an agent prior to execution.
+        This includes applying input based configuration fields.
+
+        Args:
+            data (dict): Dictionary in the following format:
+                { NodeId: NodeData }
+
+        Returns:
+            list: Return a list with the formatted data.
+        """
         config = self.node_config
 
+        # Configure data based on order
         order = config.Order
+
+        results = []
+        
+        # If first done, just return a list of the data
+        # in the order that it is currently in
         if order == SortTypes.FIRST_DONE.value:
-            result = []
 
             for _, val in data.items():
                 if isinstance(val, list):
-                    result.extend(val)
+                    results.extend(val)
 
                 else:
-                    result.append(val)
-
-            return result
+                    results.append(val)
         
+        # If sorted order, apply data in the order which
+        # is set in the config
         elif order == SortTypes.SORTED_ORDER.value:
             sorted_order = config.SortedOrder
 
-            result = []
             for _id in sorted_order:
                 val = data[_id]
 
                 if isinstance(val, list):
-                    result.extend(val)
+                    results.extend(val)
 
                 else:
-                    result.append(val)
+                    results.append(val)
             
-            return result
+        return results
 
     def broadcast(self, data: Any, reponse_dict):
         return self.consumer.consume(data, response_dict=reponse_dict)
