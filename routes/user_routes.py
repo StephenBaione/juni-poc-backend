@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body
+from fastapi import APIRouter, Body, File
 
 from data.models.user import User
 
@@ -31,4 +31,12 @@ async def confirm_user(user_id: str):
 @user_router.post('/auth_token/{user_id}')
 async def set_auth_token(user_id: str, auth_token: dict = Body(...)):
     return user_handler.handle_set_auth_token(user_id, auth_token)
+
+@user_router.get('/avatar/{user_id}')
+async def get_avatar(user_id: str):
+    return user_handler.handle_get_avatar(user_id)
+
+@user_router.post('/avatar/{user_id}')
+async def set_avatar(user_id: str, file: bytes = File(...)):
+    return user_handler.handle_set_avatar(user_id, file)
 

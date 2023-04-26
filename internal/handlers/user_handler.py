@@ -26,4 +26,10 @@ class UserHandler:
     
     def handle_get_user_by_username(self, username: str):
         return self.user_service.get_user_by_username(username)
+    
+    def handle_get_avatar(self, user_id: str):
+        return self.user_service.get_avatar(user_id)
+    
+    def handle_set_avatar(self, user_id: str, file: bytes):
+        return self.user_service.set_avatar(user_id, file)
 
