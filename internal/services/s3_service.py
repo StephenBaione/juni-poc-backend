@@ -20,7 +20,7 @@ USER_FILES_BUCKET_NAME="juni-user-files"
 USER_FILES_BUCKET_URL = f'https://{USER_FILES_BUCKET_NAME}.s3.amazonaws.com/'
 AVATAR_FOLDER = 'avatars/'
 AVATAR_FOLDER_PATH = USER_FILES_BUCKET_URL + AVATAR_FOLDER
-DEFAULT_AVATAR_URL= AVATAR_FOLDER_PATH + "default-avatar.jpeg"
+DEFAULT_AVATAR_URL = AVATAR_FOLDER_PATH + "default-avatar.jpeg"
 
 class S3Service:
     _boto3_service = Boto3Service()
@@ -78,3 +78,7 @@ class S3Service:
         
         except Exception as e:
             print('Error uploading avatar to S3: ', e)
+
+    # return the default user avatar url
+    def get_default_user_avatar_url(self):
+        return DEFAULT_AVATAR_URL

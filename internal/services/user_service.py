@@ -68,6 +68,16 @@ class UserService:
         return self.dynamodb_service.scan_table(query_key, limit=1)
     
     def get_avatar(self, user_id: str):
+        if not user_id:
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=Exception(message='User ID is required')
+            )
+        
+        if user_id == 'default':
+            return self.s3_service.get_default_user_avatar_url()
+
         result = self.dynamodb_service.get_item(user_id)
 
         if not result.success or result.Item == {}:
