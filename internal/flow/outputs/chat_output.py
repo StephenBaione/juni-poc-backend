@@ -13,3 +13,6 @@ class ChatOutput:
 
     def consume(self, items: List, response_dict):
         return items, response_dict
+    
+    def format_input(self, data):
+        return [item for item in data]

@@ -125,16 +125,16 @@ class FlowBuilder:
 
         elif node_type == 'agent':
             agent = Agent.from_json(node['Agent'])
-            print(agent.type, AgentTypes.SEMANTIC_SEARCH.value)
+            config = node['Cfg']
 
             if agent.type.lower() == AgentTypes.CHAT_GPT.value:
-                node_obj = GPTAgent(agent, connection)
+                node_obj = GPTAgent(agent, config, connection)
             
             elif agent.type.lower() == AgentTypes.SEMANTIC_SEARCH.value:
-                node_obj = SemanticSearchAgent(agent, connection)
+                node_obj = SemanticSearchAgent(agent, config, connection)
 
             elif agent.type.lower() == AgentTypes.HISTORY.value:
-                node_obj = HistoryAgent(agent, connection)
+                node_obj = HistoryAgent(agent, config, connection)
 
         return node_obj
 
@@ -243,7 +243,9 @@ class FlowBuilder:
             'Output': outputnode_key
         }
 
-        agent_input_map[input_node_key] = input_data
+        agent_input_map[input_node_key] = {
+            'Input': input_data
+        }
         while len(results) > 0:
             result = results.pop(0)
             producer = result['Producer']
@@ -256,6 +258,7 @@ class FlowBuilder:
 
             producer_key = result['ProducerNodeKey']
             producer_input = agent_input_map[producer_key]
+            producer_input = producer.format_input(producer_input)
             output = await producer.consume(producer_input)
             agent_outputs[producer_key] = output
 
@@ -263,13 +266,16 @@ class FlowBuilder:
                 producer_count_map[consumer_key] -= 1
 
                 if agent_input_map.get(consumer_key, None) is None:
-                    agent_input_map[consumer_key] = []
+                    agent_input_map[consumer_key] = {}
+
+                if agent_input_map[consumer_key].get(producer_key, None) is None:
+                    agent_input_map[consumer_key][producer_key] = []
 
                 if isinstance(output, list):
-                    agent_input_map[consumer_key].extend(output)
+                    agent_input_map[consumer_key][producer_key].extend(output)
                     agent_receive_map[consumer_key][producer_key] = True
                 else:
-                    agent_input_map[consumer_key].append(output)
+                    agent_input_map[consumer_key][producer_key].append(output)
                     agent_receive_map[consumer_key][producer_key] = True
 
         return agent_outputs
@@ -340,71 +346,6 @@ class FlowBuilder:
 
 
     def temp_validation(self, flow_template):
-        # flow_template = {
-        #     "Nodes": {
-        #         '0': {
-        #             'Agent': {
-        #                 'created_at': None,
-        #                 'id': 'test_id',
-        #                 'input_type': 'text',
-        #                 'name': 'History Agent',
-        #                 'output_type': 'text',
-        #                 'owner': '54c54359-3f55-4c5c-bb15-fb6457bec214',
-        #                 'purpose': 'Chat History',
-        #                 'service': 'pinecone',
-        #                 'type': 'PineconeService',
-        #                 'updated_at': '2023-04-04 14:58:34.463976'
-        #             },
-        #             'Consumers': ['2'],
-        #             'Type': 'agent'
-        #         },
-        #         '1': {
-        #             'Agent': {
-        #                 'created_at': '2023-04-03 23:15:36.566887',
-        #                 'id': '37ee5199-7472-4e4c-ac12-7201927fed5a',
-        #                 'input_type': 'text',
-        #                 'name': 'Knowledge Agent',
-        #                 'output_type': 'text',
-        #                 'owner': '54c54359-3f55-4c5c-bb15-fb6457bec214',
-        #                 'purpose': 'Chat Knowledge',
-        #                 'service': 'pinecone',
-        #                 'type': 'PineconeService',
-        #                 'updated_at': '2023-04-03 23:15:36.566894'
-        #             },
-        #             'Consumers': ['4'],
-        #             'Type': 'agent'
-        #         },
-        #         '2': {
-        #             'Agent': {
-        #                 'created_at': '2023-04-03 23:14:30.867621',
-        #                 'id': '369800bb-c551-4301-b218-3ef37f6f76d9',
-        #                 'input_type': 'text',
-        #                 'name': 'GPT Agent',
-        #                 'output_type': 'text',
-        #                 'owner': '54c54359-3f55-4c5c-bb15-fb6457bec214',
-        #                 'purpose': 'Chat Completion',
-        #                 'service': 'openai',
-        #                 'type': 'ChatGPT',
-        #                 'updated_at': '2023-04-03 23:14:30.867641'
-        #             },
-        #             'Consumers': ['1'],
-        #             'Type': 'agent'
-        #         },
-        #         '3': {
-        #             'Consumers': ['0'],
-        #             'InputType': 'ChatInput',
-        #             'Type': 'input'
-        #         },
-        #         '4': {
-        #             'Consumers': [],
-        #             'OutputType': 'ChatOutput',
-        #             'Type': 'output'
-        #         }
-        #     },
-        #     'Input': '3',
-        #     'Output': '4'
-        # }
-        
         # save the input node
         input_node_key = flow_template["Input"]
         output_node_key = flow_template["Output"]
@@ -514,7 +455,8 @@ class FlowBuilder:
                 flow_template["Template"][node_id] = {
                     'Type': NodeTypes.AGENT_TYPE.value,
                     'Agent': agent,
-                    'Consumers': []
+                    'Consumers': [],
+                    'Cfg': node_data['cfg']
                 }
 
         for edge in edges:

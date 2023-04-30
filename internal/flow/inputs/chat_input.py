@@ -21,5 +21,8 @@ class ChatInput:
             chat_message = ChatMessage.from_dict(chat_message)
 
         return chat_message
+    
+    def format_input(self, data):
+        return data['Input']
 
 

@@ -10,8 +10,8 @@ from ..connections.sequential_connection import SequentialConnection
 from typing import List
 
 class GPTAgent(BaseAgent):
-    def __init__(self, agent, connection: SequentialConnection = None) -> None:
-        super().__init__(agent, connection)
+    def __init__(self, agent, node_cfg, connection: SequentialConnection = None) -> None:
+        super().__init__(agent, node_cfg, connection)
 
         self.openai_service = OpenAIClient()
         self.chat_service = ChatService()
