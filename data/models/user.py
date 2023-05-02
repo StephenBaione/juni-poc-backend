@@ -6,6 +6,13 @@ from uuid import uuid4
 
 import os
 
+AWS_DEFAULT_REGION="us-east-1"
+USER_FILES_BUCKET_NAME="juni-user-files"
+USER_FILES_BUCKET_URL = f'https://{USER_FILES_BUCKET_NAME}.s3.amazonaws.com/'
+AVATAR_FOLDER = 'avatars/'
+AVATAR_FOLDER_PATH = USER_FILES_BUCKET_URL + AVATAR_FOLDER
+DEFAULT_AVATAR_URL = AVATAR_FOLDER_PATH + "default-avatar.jpeg"
+
 class AuthToken(BaseModel):
     AccessToken: str
     ExpiresIn: int
@@ -31,7 +38,7 @@ class User(BaseModel):
     confirmed: bool
     auth_token_set: bool = False
 
-    avatar_url: str = os.getenv('AWS_DEFAULT_AVATAR_URL')
+    avatar_url: str = DEFAULT_AVATAR_URL
 
     def __iter__(self):
         yield 'id', self.id
