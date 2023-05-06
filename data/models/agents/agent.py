@@ -118,6 +118,4 @@ class AgentTypes(Enum):
     CHAT_GPT = 'chatgpt'
     SEMANTIC_SEARCH = 'semanticsearch'
     HISTORY = 'history'
-
-
-
+    GPT4 = 'gpt4'

@@ -343,9 +343,9 @@ class OpenAIClient:
         embeddings = openai.Embedding.create(input = batch_text, model=model)['data']
         return [embedding['embedding'] for embedding in embeddings]
     
-    def get_chat_completion(self, messages: List[dict]):
+    def get_chat_completion(self, messages: List[dict], model='gpt-3.5-turbo'):
         return openai.ChatCompletion.create(
-            model='gpt-3.5-turbo',
+            model=model,
             temperature=0.2,
             messages=messages
         )

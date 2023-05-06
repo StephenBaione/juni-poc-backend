@@ -11,6 +11,7 @@ from data.models.agents.agent import AgentTypes, Agent
 from ..agents.gpt_agent import GPTAgent
 from ..agents.semantic_search_agent import SemanticSearchAgent
 from ..agents.history_agent import HistoryAgent
+from ..agents.gpt4_agent import GPT4Agent
 
 from ..connections.sequential_connection import SequentialConnection, ConnectionInput
 
@@ -135,6 +136,9 @@ class FlowBuilder:
 
             elif agent.type.lower() == AgentTypes.HISTORY.value:
                 node_obj = HistoryAgent(agent, config, connection)
+
+            elif agent.type.lower() == AgentTypes.GPT4.value:
+                node_obj = GPT4Agent(agent, config, connection)
 
         return node_obj
 
