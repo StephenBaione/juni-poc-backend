@@ -4,6 +4,15 @@ from typing import Optional, List, Any, Union, Dict
 
 from uuid import uuid4
 
+import os
+
+AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION')
+USER_FILES_BUCKET_NAME = os.getenv('AWS_USER_FILES_BUCKET_NAME')
+USER_FILES_BUCKET_URL = os.getenv('AWS_USER_FILES_BUCKET_URL')
+AVATAR_FOLDER = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_FOLDER')
+AVATAR_FOLDER_PATH = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_FOLDER_PATH')
+DEFAULT_AVATAR_URL = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_DEFAULT_IMAGE_URL')
+
 class AuthToken(BaseModel):
     AccessToken: str
     ExpiresIn: int
@@ -29,12 +38,15 @@ class User(BaseModel):
     confirmed: bool
     auth_token_set: bool = False
 
+    avatar_url: str = DEFAULT_AVATAR_URL
+
     def __iter__(self):
         yield 'id', self.id
         yield 'username', self.username
         yield 'email', self.email
         yield 'confirmed', self.confirmed
         yield 'auth_token_set', self.auth_token_set
+        yield 'avatar_url', self.avatar_url
 
         if self.auth_token_set:
             yield 'auth_token', dict(self.auth_token)

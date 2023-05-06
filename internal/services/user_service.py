@@ -2,11 +2,15 @@ from data.models.user import User, AuthToken
 
 from .dynamodb_service import DynamoDBService, ItemCrudResponse, Key
 
+from .s3_service import S3Service
+
 class UserService:
     def __init__(self, user: User = None) -> None:
         self.user = user
 
         self.dynamodb_service = DynamoDBService('User')
+
+        self.s3_service = S3Service()
 
     def create_user(self, user: User) -> ItemCrudResponse:
         # Check if user exists
@@ -62,3 +66,65 @@ class UserService:
         query_key = Key('username').eq(username)
 
         return self.dynamodb_service.scan_table(query_key, limit=1)
+    
+    # given a user_id, get the avatar_url
+    def get_avatar(self, user_id: str):
+        if not user_id:
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=Exception(message='User ID is required')
+            )
+        
+        if user_id == 'default':
+            return self.s3_service.get_default_user_avatar_url()
+
+        result = self.dynamodb_service.get_item(user_id)
+
+        if not result.success or result.Item == {}:
+            return result
+        
+        user = result.Item
+
+        if 'avatar_url' not in user:
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=Exception(message='User does not have an avatar')
+            )
+    
+        return ItemCrudResponse(
+            Item={user['avatar_url']},
+            success=True,
+            exception=None
+        )
+    
+    # given a user_id and a file, upload the file to S3 and update the user with the new avatar_url
+    def set_avatar(self, user_id: str, file: bytes):
+        # Upload avatar to S3
+        upload_response_url_result = self.s3_service.upload_avatar(user_id, file)
+
+        if not upload_response_url_result.success or upload_response_url_result.Item == {}:
+            return upload_response_url_result
+        
+        upload_response_url = upload_response_url_result.Item[0]
+
+        # get user from user_id
+        result = self.dynamodb_service.get_item(user_id)
+
+        if not result.success or result.Item == {} or not upload_response_url:
+            return result
+        
+        # update user with new avatar_url
+        user = result.Item
+        user['avatar_url'] = upload_response_url
+        update_result = self.dynamodb_service.update_item(user)
+
+        if not update_result.success:
+            return update_result
+    
+        return ItemCrudResponse(
+            Item={upload_response_url},
+            success=True,
+            exception=None
+        )

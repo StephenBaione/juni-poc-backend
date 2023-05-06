@@ -9,7 +9,8 @@ import os
 from enum import Enum
 
 class ResourceClients(Enum):
-    DYNAMODB = 'dynamodb'
+    DYNAMODB = 'dynamodb',
+    S3 = 's3'
 
 class Boto3Service:
     def __init__(self) -> None:
@@ -21,9 +22,12 @@ class Boto3Service:
         
         raise ValueError(f"Invalid resource client: {resource_client}")
     
-    def get_resource(self, resource: ResourceClients):
+    def get_resource(self, resource: ResourceClients, region_name: str = None):
         if resource == ResourceClients.DYNAMODB:
             return self.get_dynamodb_resource()
+        
+        if resource == ResourceClients.S3:
+            return self.get_s3_resource(region_name)
         
         raise ValueError(f"Invalid resource: {resource}")
     
@@ -32,6 +36,9 @@ class Boto3Service:
     
     def get_dynamodb_resource(self):
         return boto3.resource('dynamodb')
+    
+    def get_s3_resource(self, region_name: str):
+        return boto3.resource('s3', region_name=region_name)
 
 
 
