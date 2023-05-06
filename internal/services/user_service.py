@@ -92,8 +92,12 @@ class UserService:
                 success=False,
                 exception=Exception(message='User does not have an avatar')
             )
-        
-        return user['avatar_url']
+    
+        return ItemCrudResponse(
+            Item={user['avatar_url']},
+            success=True,
+            exception=None
+        )
     
     # given a user_id and a file, upload the file to S3 and update the user with the new avatar_url
     def set_avatar(self, user_id: str, file: bytes):
@@ -118,5 +122,9 @@ class UserService:
 
         if not update_result.success:
             return update_result
-
-        return upload_response_url
+    
+        return ItemCrudResponse(
+            Item={upload_response_url},
+            success=True,
+            exception=None
+        )
