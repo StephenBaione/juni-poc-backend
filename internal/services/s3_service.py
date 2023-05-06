@@ -70,6 +70,13 @@ class S3Service:
                 success=False,
                 exception=e
             )
+        
+    @staticmethod
+    def get_new_avatar_file_name(user_id: str) -> str:
+         # avatar will be stored in avatars/{user_id}/{timestamp}.png
+        # each file name must be unique so that the front end updates the image with the new URL
+        time = strftime(TIME_FORMAT_FILE_NAME, gmtime())
+        return f'{AVATAR_FOLDER}{user_id}/{time}.png'
 
     # given a user id and an image file, upload the image to S3 and return the url
     def upload_avatar(self, user_id: str, file: bytes):
@@ -79,10 +86,7 @@ class S3Service:
         try:
             bucket = self._s3_resource.Bucket(self.bucket_name)
             
-            # avatar will be stored in avatars/{user_id}/{timestamp}.png
-            # each file name must be unique so that the front end updates the image with the new URL
-            time = strftime(TIME_FORMAT_FILE_NAME, gmtime())
-            file_name = f'{AVATAR_FOLDER}{user_id}/{time}.png'
+            file_name = S3Service.get_new_avatar_file_name(user_id)
 
             # delete all other previously used avatars for this user
             for obj in bucket.objects.filter(Prefix=f'{AVATAR_FOLDER}{user_id}/'):
