@@ -1,5 +1,5 @@
 {
-    "id": "v1",
+    "id": "v2",
     "AvailableAgents": {
         "ChatGPT": {
             "Service": "openai",
@@ -26,6 +26,16 @@
             "ServiceLabel": "Pinecone",
             "Type": "semantic_search",
             "TypeLabel": "Semantic Search",
+            "InputType": "text",
+            "InputTypeLabel": "Text",
+            "OutputType": "text",
+            "OutputTypeLabel": "Text"
+        },
+        "GPT4": {
+            "Service": "openai",
+            "ServiceLabel": "OpenAI",
+            "Type": "gpt4",
+            "TypeLabel": "GPT 4",
             "InputType": "text",
             "InputTypeLabel": "Text",
             "OutputType": "text",
