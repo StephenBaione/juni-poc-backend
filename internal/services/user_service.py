@@ -98,7 +98,12 @@ class UserService:
     # given a user_id and a file, upload the file to S3 and update the user with the new avatar_url
     def set_avatar(self, user_id: str, file: bytes):
         # Upload avatar to S3
-        upload_response_url = self.s3_service.upload_avatar(user_id, file)
+        upload_response_url_result = self.s3_service.upload_avatar(user_id, file)
+
+        if not upload_response_url_result.success or upload_response_url_result.Item == {}:
+            return upload_response_url_result
+        
+        upload_response_url = upload_response_url_result.Item[0]
 
         # get user from user_id
         result = self.dynamodb_service.get_item(user_id)

@@ -2,11 +2,15 @@ from .boto3_service import Boto3Service, ResourceClients
 
 from boto3.dynamodb.conditions import Key
 
+from .dynamodb_service import ItemCrudResponse
+
 import os, io
 
 import pydantic
 
 from typing import Optional, Any, List, Union, Dict, Tuple
+
+import os
 
 from PIL import Image
 from io import BytesIO
@@ -14,12 +18,12 @@ import numpy as np
 
 from time import gmtime, strftime
 
-AWS_DEFAULT_REGION="us-east-1"
-USER_FILES_BUCKET_NAME="juni-user-files"
-USER_FILES_BUCKET_URL = f'https://{USER_FILES_BUCKET_NAME}.s3.amazonaws.com/'
-AVATAR_FOLDER = 'avatars/'
-AVATAR_FOLDER_PATH = USER_FILES_BUCKET_URL + AVATAR_FOLDER
-DEFAULT_AVATAR_URL = AVATAR_FOLDER_PATH + "default-avatar.jpeg"
+AWS_DEFAULT_REGION = os.getenv('AWS_DEFAULT_REGION')
+USER_FILES_BUCKET_NAME = os.getenv('AWS_USER_FILES_BUCKET_NAME')
+USER_FILES_BUCKET_URL = os.getenv('AWS_USER_FILES_BUCKET_URL')
+AVATAR_FOLDER = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_FOLDER')
+AVATAR_FOLDER_PATH = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_FOLDER_PATH')
+DEFAULT_AVATAR_URL = os.getenv('AWS_USER_FILES_BUCKET_AVATAR_DEFAULT_IMAGE_URL')
 
 TIME_FORMAT_FILE_NAME = "%Y-%m-%d_%H:%M:%S"
 
@@ -51,9 +55,21 @@ class S3Service:
             file_stream = response['Body']
             image = Image.open(file_stream)
             image_array = np.array(image)
-            return image_array
+
+            return ItemCrudResponse(
+                Item={image_array},
+                success=True,
+                exception=None
+            )
+        
         except Exception as e:
             print('Error getting image from S3: ', e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
     # given a user id and an image file, upload the image to S3 and return the url
     def upload_avatar(self, user_id: str, file: bytes):
@@ -78,11 +94,22 @@ class S3Service:
                 file_name
             )
 
-            print('avatar image upload result:', result)
-            return USER_FILES_BUCKET_URL + file_name
+            url = USER_FILES_BUCKET_URL + file_name
+        
+            return ItemCrudResponse(
+                Item={url},
+                success=True,
+                exception=None
+            )
         
         except Exception as e:
             print('Error uploading avatar to S3: ', e)
+
+            return ItemCrudResponse(
+                Item={},
+                success=False,
+                exception=e
+            )
 
     # return the default user avatar url
     def get_default_user_avatar_url(self):
